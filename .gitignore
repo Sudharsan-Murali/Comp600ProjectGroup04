@@ -1,0 +1,36 @@
+# Ignore target directory (Maven builds go here)
+target/
+
+# Ignore dependency caches
+**/out/
+**/bin/
+**/.idea/
+**/.vscode/
+**/.classpath
+**/.project
+**/.settings/
+
+# Ignore compiled Java files
+*.class
+
+# Ignore Maven wrapper files (if applicable)
+.mvn/
+!mvn/wrapper/maven-wrapper.jar
+
+# Ignore logs and temp files
+*.log
+*.tmp
+hs_err_pid*
+
+# Ignore IDE-specific files
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore Java Swing UI Designer generated files
+*.form
