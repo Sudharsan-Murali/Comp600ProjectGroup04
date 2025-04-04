@@ -1,4 +1,4 @@
-package jobportal.src.ReviewAndMerge;
+package com.group04.GUI.User;
 
 import javax.swing.*;
 import javax.swing.table.*;

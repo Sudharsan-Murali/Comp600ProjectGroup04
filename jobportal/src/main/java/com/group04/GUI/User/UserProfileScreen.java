@@ -2,74 +2,29 @@ package com.group04.GUI.User;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
+
+import com.group04.GUI.BaseScreen;
+import com.group04.GUI.User.JobSearchScreen;
+import com.group04.GUI.Components.UIUtils;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 
-public class RefactoredUserProfile {
+public class UserProfileScreen extends BaseScreen {
     private JLabel profilePicLabel;
     private JButton editButton, removeButton;
     private JPanel buttonPanel = new JPanel();
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new RefactoredUserProfile().createAndShowGUI());
+    public UserProfileScreen() {
+        super("User Profile");
+        initializeUI();
     }
 
-    private void createAndShowGUI() {
-        JFrame frame = new JFrame("User Profile");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(900, 700);
-        frame.setLayout(new BorderLayout(1, 10));
-
-        JPanel leftPanel = createSidePanel();
+    private void initializeUI() {
         JPanel rightPanel = createRightPanel();
-
-        frame.add(leftPanel, BorderLayout.WEST);
-        frame.add(rightPanel, BorderLayout.CENTER);
-        frame.setVisible(true);
-    }
-
-    private JPanel createSidePanel() {
-        JPanel leftPanel = new JPanel();
-        leftPanel.setBackground(new Color(33, 37, 41));
-        leftPanel.setPreferredSize(new Dimension(200, 600));
-        leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
-
-        String[] buttonNames = { "Profile", "Applications", "Search Jobs", "Logout" };
-        for (String name : buttonNames) {
-            JButton button = createSideButton(name);
-            leftPanel.add(Box.createRigidArea(new Dimension(0, 20)));
-            leftPanel.add(button);
-        }
-
-        return leftPanel;
-    }
-
-    private JButton createSideButton(String name) {
-        JButton button = new JButton(name);
-        button.setAlignmentX(Component.CENTER_ALIGNMENT);
-        button.setMaximumSize(new Dimension(180, 40));
-        button.setBackground(new Color(52, 58, 64));
-        button.setForeground(Color.WHITE);
-        button.setFocusPainted(false);
-        button.setBorderPainted(false);
-        button.setFont(new Font("Arial", Font.PLAIN, 14));
-
-        button.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                button.setBackground(new Color(73, 80, 87));
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                button.setBackground(new Color(52, 58, 64));
-            }
-        });
-
-        return button;
+        add(rightPanel, BorderLayout.CENTER);
+        setVisible(true);
     }
 
     private JPanel createRightPanel() {
@@ -86,75 +41,57 @@ public class RefactoredUserProfile {
 
     private JPanel createTitlePanel() {
         JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
-        JLabel screenTitle = createTitleLabel();
         titlePanel.setPreferredSize(new Dimension(800, 50));
-        titlePanel.add(screenTitle);
+        titlePanel.add(UIUtils.createTitleLabel("User Profile",
+                "jobportal\\src\\Assets\\Profile-Pic-Icon.png"));
         return titlePanel;
     }
 
-    private JLabel createTitleLabel() {
-        JLabel screenTitle;
-        try {
-            BufferedImage originalIcon = ImageIO.read(new File("jobportal\\src\\Assets\\Profile-Pic-Icon.png"));
-            Image scaledIcon = originalIcon.getScaledInstance(24, 24, Image.SCALE_SMOOTH);
-            screenTitle = new JLabel("User Profile", new ImageIcon(scaledIcon), JLabel.LEFT);
-        } catch (Exception e) {
-            screenTitle = new JLabel("User Profile");
-        }
-
-        Font font = new Font("Arial", Font.BOLD, 24);
-        screenTitle.setFont(font);
-        screenTitle.setForeground(Color.BLACK);
-        return screenTitle;
-    }
-
     private JPanel createProfilePicPanel() {
-        // OUTER panel to center the whole thing
         JPanel containerPanel = new JPanel();
         containerPanel.setLayout(new BoxLayout(containerPanel, BoxLayout.Y_AXIS));
         containerPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
-    
-        // LABEL container to control fixed size
+
         JPanel imagePanel = new JPanel();
         imagePanel.setMaximumSize(new Dimension(120, 120));
         imagePanel.setPreferredSize(new Dimension(120, 120));
         imagePanel.setLayout(new BorderLayout());
-    
+
         profilePicLabel = new JLabel("Profile Picture", SwingConstants.CENTER);
         profilePicLabel.setPreferredSize(new Dimension(120, 120));
         profilePicLabel.setBorder(BorderFactory.createLineBorder(Color.BLACK, 1));
         profilePicLabel.setOpaque(true);
         profilePicLabel.setBackground(Color.LIGHT_GRAY);
-    
+
         imagePanel.add(profilePicLabel, BorderLayout.CENTER);
-    
-        // BUTTON PANEL (Upload + Remove)
+
         buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
         editButton = new JButton("Upload");
         removeButton = new JButton("Remove");
-        removeButton.setVisible(false); // Hide by default
-    
+        removeButton.setVisible(false);
+
         editButton.addActionListener(e -> uploadProfilePicture());
         removeButton.addActionListener(e -> removeProfilePicture());
-    
+
         buttonPanel.add(editButton);
         buttonPanel.add(removeButton);
-    
-        // Add both to the vertical container
+
         containerPanel.add(imagePanel);
-        containerPanel.add(Box.createRigidArea(new Dimension(0, 10))); // spacing
+        containerPanel.add(Box.createRigidArea(new Dimension(0, 10)));
         containerPanel.add(buttonPanel);
-    
+
         return containerPanel;
     }
-    
+
     private JPanel createFormPanel() {
         JPanel formPanel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 10, 10, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        String[][] fields = { { "First Name", "Last Name" }, { "Email", "Phone" }, { "Current Company", "Job Role" } };
+        String[][] fields = { { "First Name", "Last Name" },
+                { "Email", "Phone" },
+                { "Current Company", "Job Role" } };
         for (int i = 0; i < fields.length; i++) {
             for (int j = 0; j < 2; j++) {
                 addFormField(formPanel, fields[i][j], i, j, gbc);
@@ -185,14 +122,15 @@ public class RefactoredUserProfile {
 
     private void addResumeField(JPanel formPanel, GridBagConstraints gbc) {
         JLabel resumeLabel = new JLabel("Default Resume *:");
-        JButton uploadButton = new JButton("Upload");
+        JButton uploadButton = new JButton("Attach");
         JLabel fileNameLabel = new JLabel();
         JButton removeFileButton = new JButton("X");
         removeFileButton.setVisible(false);
 
         uploadButton.addActionListener(e -> {
             JFileChooser fileChooser = new JFileChooser();
-            fileChooser.setFileFilter(new FileNameExtensionFilter("PDF & Word Documents", "pdf", "doc", "docx"));
+            fileChooser.setFileFilter(new FileNameExtensionFilter(
+                    "PDF & Word Documents", "pdf", "doc", "docx"));
             if (fileChooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
                 File selectedFile = fileChooser.getSelectedFile();
                 fileNameLabel.setText(selectedFile.getName());
@@ -227,11 +165,15 @@ public class RefactoredUserProfile {
     private void uploadProfilePicture() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Select Profile Picture");
-        fileChooser.setFileFilter(new FileNameExtensionFilter("JPEG Images", "jpg", "jpeg", "png"));
+        fileChooser.setFileFilter(new FileNameExtensionFilter(
+                "JPEG Images", "jpg", "jpeg", "png"));
         if (fileChooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
             File selectedFile = fileChooser.getSelectedFile();
             ImageIcon imageIcon = new ImageIcon(selectedFile.getPath());
-            Image image = imageIcon.getImage().getScaledInstance(profilePicLabel.getWidth(), profilePicLabel.getHeight(), Image.SCALE_SMOOTH);
+            Image image = imageIcon.getImage().getScaledInstance(
+                    profilePicLabel.getWidth(),
+                    profilePicLabel.getHeight(),
+                    Image.SCALE_SMOOTH);
             profilePicLabel.setIcon(new ImageIcon(image));
             removeButton.setVisible(true);
         }
@@ -241,4 +183,40 @@ public class RefactoredUserProfile {
         profilePicLabel.setIcon(null);
         removeButton.setVisible(false);
     }
+
+    @Override
+protected void handleNavigation(ActionEvent e) {
+    String command = ((JButton) e.getSource()).getText();
+    dispose(); // Close current window
+
+    switch (command) {
+        case "Profile":
+            // Use invokeLater to ensure thread safety
+            SwingUtilities.invokeLater(() -> new UserProfileScreen());
+            break;
+        case "Search Jobs":
+            SwingUtilities.invokeLater(() -> new JobSearchScreen());
+            break;
+        case "Applications":
+            SwingUtilities.invokeLater(() -> new UserAppscreen());
+            break;
+        case "Logout":
+            performLogout();
+            break;
+        default:
+            System.out.println("Unknown command: " + command);
+    }
+}
+
+    private void performLogout() {
+        // Add logout logic here
+        System.out.println("Logging out...");
+        dispose();
+        // new LoginScreen(); // Assuming you have a login screen
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(UserProfileScreen::new);
+    }
+
 }

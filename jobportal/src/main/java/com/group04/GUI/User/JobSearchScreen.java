@@ -1,13 +1,31 @@
 package com.group04.GUI.User;
 
 import javax.swing.*;
+
+import com.group04.GUI.BaseScreen;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import javax.imageio.ImageIO;
 
-public class JobSearchScreen {
+public class JobSearchScreen extends BaseScreen{
+    public JobSearchScreen(String title) {
+        super("Job Search");
+        initializeUI();
+    }
+
+    public JobSearchScreen() { // Not private or protected
+        super("Job Search");
+        // initialization
+    }
+
+    private void initializeUI() {
+        // Add your job search components here
+        setVisible(true);
+    }
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(JobSearchScreen::createAndShowGUI);
     }
@@ -166,5 +184,30 @@ public class JobSearchScreen {
         });
 
         return cardPanel;
+    }
+
+    @Override
+    protected void handleNavigation(ActionEvent e) {
+        String command = ((JButton) e.getSource()).getText();
+        dispose();
+        
+        switch(command) {
+            case "Profile":
+                new UserProfileScreen();
+                break;
+            case "Search Jobs":
+                // Already on this screen
+                break;
+            case "Applications":
+                new UserAppscreen();
+                break;
+            case "Logout":
+                performLogout();
+                break;
+        }
+    }
+    
+    private void performLogout() {
+        // Similar logout logic
     }
 }
