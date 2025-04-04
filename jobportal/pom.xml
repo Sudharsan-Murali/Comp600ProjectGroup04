@@ -20,12 +20,13 @@
   </properties>
 
   <dependencies>
-  <!-- JDBC Connector for MySQL -->
+    <!-- JDBC Connector for MySQL -->
     <dependency>
       <groupId>mysql</groupId>
       <artifactId>mysql-connector-java</artifactId>
       <version>8.0.33</version>
     </dependency>
+
     <!-- JUnit for Unit Testing -->
     <dependency>
       <groupId>junit</groupId>
