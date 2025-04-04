@@ -1,4 +1,4 @@
-package com.group04;
+package com.group04.Connection;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -10,9 +10,9 @@ import java.sql.Statement;
  * Hello world!
  *
  */
-public class App {
+public class JdbcConnector {
     // Database credentials
-    private static final String URL = "jdbc:mysql://localhost:3306/jobportal"; // Replace with your DB name
+    private static final String URL = "jdbc:mysql://localhost:3306/mydb"; // Replace with your DB name
     private static final String USER = "root"; // Your MySQL username
     private static final String PASSWORD = "root"; // Your MySQL password
 
@@ -53,8 +53,8 @@ public class App {
             while (rs.next()) {
                 int id = rs.getInt("id");
                 String name = rs.getString("name");
-                String email = rs.getString("email");
-                System.out.println("ID: " + id + " | Name: " + name + " | Email: " + email);
+                //String email = rs.getString("email");
+                System.out.println("ID: " + id + " | Name: " + name );
             }
 
             System.out.println("----------------------------");
