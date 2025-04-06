@@ -1,0 +1,9 @@
+USE job_portal;
+
+CREATE TABLE IF NOT EXISTS Company (
+    Company_ID INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+    Company_name VARCHAR(50) NOT NULL,
+    Company_location VARCHAR(100)NOT NULL,
+    Job_lists VARCHAR(100)
+)AUTO_INCREMENT = 1001;
+

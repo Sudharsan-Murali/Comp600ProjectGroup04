@@ -1,0 +1,1 @@
+drop database job_portal;

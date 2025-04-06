@@ -1,0 +1,14 @@
+USE job_portal;
+
+CREATE TABLE IF NOT EXISTS Applications_User (
+    Application_ID INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+    Job_Title VARCHAR(50),
+    Application_Date date,
+	User_ID int, 
+     FOREIGN KEY (User_ID) REFERENCES Users(USer_ID)ON DELETE CASCADE ON UPDATE CASCADE,
+	Company_ID int,
+	 FOREIGN KEY (Company_ID) REFERENCES company(Company_ID)ON DELETE CASCADE ON UPDATE CASCADE,
+	Status_ID int,
+     FOREIGN KEY (Status_ID) REFERENCES Application_Status(Status_ID)ON DELETE CASCADE ON UPDATE CASCADE
+)AUTO_INCREMENT = 101;
+
