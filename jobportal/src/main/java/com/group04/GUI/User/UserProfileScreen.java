@@ -3,7 +3,6 @@ package com.group04.GUI.User;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
-import com.group04.GUI.BaseScreen;
 import com.group04.GUI.User.JobSearchScreen;
 import com.group04.GUI.Components.UIUtils;
 
