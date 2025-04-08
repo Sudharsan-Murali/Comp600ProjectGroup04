@@ -1,23 +1,24 @@
-package com.group04.merge;
+package com.group04.GUI;
 
 import javax.swing.*;
 
-import com.group04.GUI.JobPortalAppM;
 import com.group04.GUI.Admin.AdminDashboard;
+import com.group04.GUI.Recruiter.RecruiterProfileScreen;
+import com.group04.GUI.User.UserMerged;
 
 import java.awt.*;
 import java.awt.event.*;
 
-public class JobPortalUI {
+public class JobPortalApplication {
     JFrame frame;
     CardLayout layout;
     JPanel containerPanel;
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(JobPortalUI::new);
+        SwingUtilities.invokeLater(JobPortalApplication::new);
     }
 
-    public JobPortalUI() {
+    public JobPortalApplication() {
         frame = new JFrame("Job Portal");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(800, 600);
@@ -129,7 +130,7 @@ public class JobPortalUI {
 
                 switch (role) {
                     case "User":
-                        SwingUtilities.invokeLater(() -> new JobPortalAppM.UserProfileScreen());
+                        SwingUtilities.invokeLater(() -> new UserMerged.UserProfileScreen());
                         break;
                     case "Recruiter":
                         new RecruiterProfileScreen().createAndShowGUI();

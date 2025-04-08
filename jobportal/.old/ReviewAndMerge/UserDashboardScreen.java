@@ -1,6 +1,7 @@
 package com.group04.merge;
 
 import com.group04.GUI.User.UserDashboardScreen;
+import com.group04.GUI.JobPortalApplication;
 import com.group04.GUI.Recruiter.RecruiterProfileScreen;
 
 import javax.swing.*;
@@ -12,7 +13,7 @@ public class UserDashboardScreen {
     JPanel containerPanel;
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(JobPortalUI::new);
+        SwingUtilities.invokeLater(JobPortalApplication::new);
     }
 
     public JobPortalUI() {

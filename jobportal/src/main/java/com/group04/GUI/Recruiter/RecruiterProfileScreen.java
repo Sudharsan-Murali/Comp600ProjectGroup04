@@ -1,4 +1,4 @@
-package com.group04.merge;
+package com.group04.GUI.Recruiter;
 
 import javax.swing.*;
 import java.awt.*;
@@ -6,6 +6,8 @@ import java.awt.event.*;
 import java.io.File;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.TableColumnModel;
+
+import com.group04.GUI.JobPortalApplication;
 
 
 public class RecruiterProfileScreen 
@@ -26,7 +28,7 @@ public class RecruiterProfileScreen
 //         SwingUtilities.invokeLater(() -> new RecruiterProfileScreen().createAndShowGUI());
 //     }
 
-    void createAndShowGUI() 
+    public void createAndShowGUI() 
         {
             frame = new JFrame("Recruiter Portal");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -50,7 +52,7 @@ public class RecruiterProfileScreen
             applicationButton.addActionListener(e -> showApplicationScreen());
             logoutButton.addActionListener(e -> {
                 frame.dispose(); // Close recruiter dashboard
-                SwingUtilities.invokeLater(() -> new JobPortalUI()); // Reopen login screen
+                SwingUtilities.invokeLater(() -> new JobPortalApplication()); // Reopen login screen
             });
 
             leftPanel.add(profileButton);

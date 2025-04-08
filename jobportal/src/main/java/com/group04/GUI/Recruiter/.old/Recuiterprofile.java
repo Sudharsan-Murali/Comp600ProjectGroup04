@@ -1,5 +1,3 @@
-package com.group04;
-
 import javax.swing.*;
 import java.awt.*;
 

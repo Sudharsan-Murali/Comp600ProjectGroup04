@@ -1,4 +1,4 @@
-package com.group04.GUI;
+package com.group04.GUI.User;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -10,8 +10,8 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import javax.imageio.ImageIO;
 
-public class temp extends JFrame {
-    
+public class UserMerged extends JFrame {
+
     // UIConstants class
     private static class UIConstants {
         public static final Color DARK_BG = new Color(33, 37, 41);
@@ -77,8 +77,8 @@ public class temp extends JFrame {
             setPreferredSize(UIConstants.SIDE_PANEL_SIZE);
             setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
             add(Box.createRigidArea(new Dimension(0, 40)));
-            
-            String[] buttons = {"Profile", "Applications", "Search Jobs", "Logout"};
+
+            String[] buttons = { "Profile", "Applications", "Search Jobs", "Logout" };
             for (String btn : buttons) {
                 JButton button = ButtonFactory.createSideButton(btn);
                 button.addActionListener(listener);
@@ -97,12 +97,12 @@ public class temp extends JFrame {
             setLayout(new BorderLayout());
             add(new SidePanel(this::handleNavigation), BorderLayout.WEST);
         }
-        
+
         protected abstract void handleNavigation(ActionEvent e);
     }
 
     // UserProfileScreen
-    private static class UserProfileScreen extends BaseScreen {
+    public static class UserProfileScreen extends BaseScreen {
         private JLabel profilePicLabel;
         private JButton editButton, removeButton;
         private JPanel buttonPanel = new JPanel();
@@ -305,7 +305,6 @@ public class temp extends JFrame {
             // new LoginScreen(); // Assuming you have a login screen
         }
     }
-    
 
     // JobSearchScreen
     private static class JobSearchScreen extends BaseScreen {
@@ -313,7 +312,7 @@ public class temp extends JFrame {
         private JPanel jobResultsPanel;
         private JTextArea jobDetailsArea;
         private JPanel detailsPanel;
-        
+
         public JobSearchScreen() {
             super("Job Search");
             initializeUI();
@@ -322,19 +321,19 @@ public class temp extends JFrame {
         private void initializeUI() {
             // Main content panel
             JPanel mainContentPanel = new JPanel(new BorderLayout());
-            
+
             // Create north container panel for title + search
             JPanel northContainer = new JPanel();
             northContainer.setLayout(new BoxLayout(northContainer, BoxLayout.Y_AXIS));
-            
+
             // Add components to north container
             northContainer.add(createTitlePanel());
             northContainer.add(createSearchPanel());
-            
+
             // Add north container and job content
             mainContentPanel.add(northContainer, BorderLayout.NORTH);
             mainContentPanel.add(createJobContentSplitPane(), BorderLayout.CENTER);
-            
+
             add(mainContentPanel, BorderLayout.CENTER);
             setVisible(true);
         }
@@ -353,7 +352,7 @@ public class temp extends JFrame {
 
             screenTitle.setFont(UIConstants.TITLE_FONT);
             titlePanel.add(screenTitle);
-            
+
             return titlePanel;
         }
 
@@ -368,17 +367,17 @@ public class temp extends JFrame {
             searchPanel.add(searchField);
             searchPanel.add(searchButton);
             searchPanel.add(clearButton);
-            
+
             // Allow panel to expand horizontally
             searchPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, searchPanel.getPreferredSize().height));
-            
+
             // Add action listeners
             searchButton.addActionListener(e -> performSearch());
             clearButton.addActionListener(e -> clearSearch());
-            
+
             return searchPanel;
         }
-        
+
         private void performSearch() {
             String searchQuery = searchField.getText().trim();
             jobResultsPanel.removeAll();
@@ -387,15 +386,18 @@ public class temp extends JFrame {
                 jobResultsPanel.add(new JLabel("Please enter a search query."));
             } else {
                 jobResultsPanel.add(new JLabel("Results for: " + searchQuery));
-                
+
                 // Create some sample job cards
                 for (int i = 1; i <= 5; i++) {
-                    JPanel jobCard = createJobCard("Job " + i + ": " + searchQuery + " Developer at Company " + (char)('A' + i - 1), 
-                        "Location: City " + i + "\nSalary: $" + (80000 + i * 5000) + "\nPosted: " + i + " days ago",
-                        "This is a detailed description for Job " + i + " related to " + searchQuery + 
-                        ".\n\nResponsibilities:\n- Develop " + searchQuery + " applications\n- Work with team members\n" +
-                        "- Participate in design discussions\n\nRequirements:\n- " + (i+2) + "+ years of experience\n" +
-                        "- Strong knowledge of " + searchQuery + "\n- Good communication skills");
+                    JPanel jobCard = createJobCard(
+                            "Job " + i + ": " + searchQuery + " Developer at Company " + (char) ('A' + i - 1),
+                            "Location: City " + i + "\nSalary: $" + (80000 + i * 5000) + "\nPosted: " + i + " days ago",
+                            "This is a detailed description for Job " + i + " related to " + searchQuery +
+                                    ".\n\nResponsibilities:\n- Develop " + searchQuery
+                                    + " applications\n- Work with team members\n" +
+                                    "- Participate in design discussions\n\nRequirements:\n- " + (i + 2)
+                                    + "+ years of experience\n" +
+                                    "- Strong knowledge of " + searchQuery + "\n- Good communication skills");
                     jobResultsPanel.add(jobCard);
                     jobResultsPanel.add(Box.createRigidArea(new Dimension(0, 10)));
                 }
@@ -404,39 +406,39 @@ public class temp extends JFrame {
             jobResultsPanel.revalidate();
             jobResultsPanel.repaint();
         }
-        
+
         private void clearSearch() {
             searchField.setText("");
             jobResultsPanel.removeAll();
             jobResultsPanel.add(new JLabel("Enter a search term and click 'Search' to find jobs"));
             jobResultsPanel.revalidate();
             jobResultsPanel.repaint();
-            
+
             // Hide details panel
             detailsPanel.setVisible(false);
         }
-        
+
         private JSplitPane createJobContentSplitPane() {
             JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-            
+
             // Left panel - Job Results
             jobResultsPanel = new JPanel();
             jobResultsPanel.setLayout(new BoxLayout(jobResultsPanel, BoxLayout.Y_AXIS));
             JScrollPane resultsScrollPane = new JScrollPane(jobResultsPanel);
             resultsScrollPane.setPreferredSize(new Dimension(350, 500));
-            
+
             // Initial placeholder text
             jobResultsPanel.add(new JLabel("Enter a search term and click 'Search' to find jobs"));
-            
+
             // Right panel - Job Details
             detailsPanel = new JPanel(new BorderLayout());
             detailsPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-            
+
             // Create a title for the details panel
             JLabel detailsTitle = new JLabel("Job Details");
             detailsTitle.setFont(UIConstants.TITLE_FONT);
             detailsPanel.add(detailsTitle, BorderLayout.NORTH);
-            
+
             // Create a text area for the job details
             jobDetailsArea = new JTextArea();
             jobDetailsArea.setEditable(false);
@@ -444,7 +446,7 @@ public class temp extends JFrame {
             jobDetailsArea.setLineWrap(true);
             jobDetailsArea.setFont(UIConstants.NORMAL_FONT);
             jobDetailsArea.setText("Select a job to view details");
-            
+
             // Add an apply button
             JButton applyButton = new JButton("Apply Now");
             applyButton.setPreferredSize(new Dimension(150, 40));
@@ -457,22 +459,22 @@ public class temp extends JFrame {
                 popup.add(new JLabel("Application submitted successfully!", SwingConstants.CENTER));
                 popup.setVisible(true);
             });
-            
+
             JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
             buttonPanel.add(applyButton);
-            
+
             // Add components to the details panel
             detailsPanel.add(new JScrollPane(jobDetailsArea), BorderLayout.CENTER);
             detailsPanel.add(buttonPanel, BorderLayout.SOUTH);
-            
+
             // Initially hide the details panel
             detailsPanel.setVisible(false);
-            
+
             // Add panels to split pane
             splitPane.setLeftComponent(resultsScrollPane);
             splitPane.setRightComponent(detailsPanel);
             splitPane.setDividerLocation(350);
-            
+
             return splitPane;
         }
 
@@ -483,22 +485,22 @@ public class temp extends JFrame {
             cardPanel.setPreferredSize(new Dimension(330, 100));
             cardPanel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY, 1));
             cardPanel.setBackground(Color.WHITE);
-            
+
             // Title
             JLabel titleLabel = new JLabel(title);
             titleLabel.setFont(new Font("Arial", Font.BOLD, 14));
             titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
             titleLabel.setBorder(BorderFactory.createEmptyBorder(5, 10, 0, 10));
-            
+
             // Summary
             JLabel summaryLabel = new JLabel(summary);
             summaryLabel.setFont(new Font("Arial", Font.PLAIN, 12));
             summaryLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
             summaryLabel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
-            
+
             cardPanel.add(titleLabel);
             cardPanel.add(summaryLabel);
-            
+
             // Add mouse listener to handle click
             cardPanel.addMouseListener(new MouseAdapter() {
                 @Override
@@ -506,7 +508,7 @@ public class temp extends JFrame {
                     // Show job details
                     jobDetailsArea.setText(title + "\n\n" + summary + "\n\n" + details);
                     detailsPanel.setVisible(true);
-                    
+
                     // Highlight the selected card
                     for (Component comp : jobResultsPanel.getComponents()) {
                         if (comp instanceof JPanel) {
@@ -514,16 +516,16 @@ public class temp extends JFrame {
                         }
                     }
                     cardPanel.setBackground(new Color(230, 242, 255)); // Light blue highlight
-                    
+
                 }
-                
+
                 @Override
                 public void mouseEntered(MouseEvent e) {
                     if (cardPanel.getBackground() != new Color(230, 242, 255)) {
                         cardPanel.setBackground(new Color(245, 245, 245)); // Light gray hover
                     }
                 }
-                
+
                 @Override
                 public void mouseExited(MouseEvent e) {
                     if (cardPanel.getBackground() == new Color(245, 245, 245)) {
@@ -531,7 +533,7 @@ public class temp extends JFrame {
                     }
                 }
             });
-            
+
             return cardPanel;
         }
 
@@ -539,8 +541,8 @@ public class temp extends JFrame {
         protected void handleNavigation(ActionEvent e) {
             String command = ((JButton) e.getSource()).getText();
             dispose();
-            
-            switch(command) {
+
+            switch (command) {
                 case "Profile":
                     SwingUtilities.invokeLater(() -> new UserProfileScreen());
                     break;
@@ -555,7 +557,7 @@ public class temp extends JFrame {
                     break;
             }
         }
-        
+
         private void performLogout() {
             // Logout logic
             System.out.println("Logging out...");
@@ -563,7 +565,6 @@ public class temp extends JFrame {
             // new LoginScreen(); // Assuming you have a login screen
         }
     }
-    
 
     // Enhanced UserAppScreen with table functionality
     private static class UserAppScreen extends BaseScreen {
@@ -577,7 +578,7 @@ public class temp extends JFrame {
 
         private void initializeUI() {
             JPanel mainPanel = new JPanel(new BorderLayout());
-            
+
             // Title Panel
             JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
             try {
@@ -589,7 +590,8 @@ public class temp extends JFrame {
             }
 
             // Table setup
-            String[] columnNames = {"No", "Job Title", "Company Name", "Status", "Date", "Update Date", "Withdraw", "Resume", "View"};
+            String[] columnNames = { "No", "Job Title", "Company Name", "Status", "Date", "Update Date", "Withdraw",
+                    "Resume", "View" };
             tableModel = new DefaultTableModel(columnNames, 0) {
                 @Override
                 public boolean isCellEditable(int row, int column) {
@@ -607,10 +609,10 @@ public class temp extends JFrame {
 
             // Add sample data
             for (int i = 1; i <= 5; i++) {
-                tableModel.addRow(new Object[]{
-                    i, "Developer " + i, "Company " + i, "Applied", 
-                    "2023-09-0" + i, "2023-09-1" + i, "Withdraw", 
-                    "Resume Content " + i, "View"
+                tableModel.addRow(new Object[] {
+                        i, "Developer " + i, "Company " + i, "Applied",
+                        "2023-09-0" + i, "2023-09-1" + i, "Withdraw",
+                        "Resume Content " + i, "View"
                 });
             }
 
@@ -620,7 +622,8 @@ public class temp extends JFrame {
 
         private void configureTableColumns() {
             table.getColumn("Withdraw").setCellRenderer(new ButtonRenderer("Withdraw"));
-            table.getColumn("Withdraw").setCellEditor(new ButtonEditor(new JCheckBox(), tableModel, table, "Withdraw", this));
+            table.getColumn("Withdraw")
+                    .setCellEditor(new ButtonEditor(new JCheckBox(), tableModel, table, "Withdraw", this));
 
             table.getColumn("Resume").setCellRenderer(new ButtonRenderer("Download"));
             table.getColumn("Resume").setCellEditor(new ResumeButtonEditor(new JCheckBox(), tableModel, table, this));
@@ -633,12 +636,20 @@ public class temp extends JFrame {
         protected void handleNavigation(ActionEvent e) {
             String command = ((JButton) e.getSource()).getText();
             dispose();
-            
+
             switch (command) {
-                case "Profile": new UserProfileScreen(); break;
-                case "Search Jobs": new JobSearchScreen(); break;
-                case "Applications": new UserAppScreen(); break;
-                case "Logout": System.exit(0); break;
+                case "Profile":
+                    new UserProfileScreen();
+                    break;
+                case "Search Jobs":
+                    new JobSearchScreen();
+                    break;
+                case "Applications":
+                    new UserAppScreen();
+                    break;
+                case "Logout":
+                    System.exit(0);
+                    break;
             }
         }
     }
@@ -653,7 +664,7 @@ public class temp extends JFrame {
         }
 
         @Override
-        public Component getTableCellRendererComponent(JTable table, Object value, 
+        public Component getTableCellRendererComponent(JTable table, Object value,
                 boolean isSelected, boolean hasFocus, int row, int column) {
             setFont(new Font("Arial", Font.BOLD, 10));
             setBackground(new Color(200, 200, 200));
@@ -695,7 +706,8 @@ public class temp extends JFrame {
                             sanitizeFilename(company) + ".txt";
 
                     File downloadsDir = new File(System.getProperty("user.home"), "Downloads");
-                    if (!downloadsDir.exists()) downloadsDir.mkdirs();
+                    if (!downloadsDir.exists())
+                        downloadsDir.mkdirs();
 
                     File file = new File(downloadsDir, fileName);
                     try (OutputStreamWriter writer = new OutputStreamWriter(
@@ -741,7 +753,7 @@ public class temp extends JFrame {
         private int row;
         private JFrame frame;
 
-        public ButtonEditor(JCheckBox checkBox, DefaultTableModel tableModel, 
+        public ButtonEditor(JCheckBox checkBox, DefaultTableModel tableModel,
                 JTable table, String label, JFrame frame) {
             super(checkBox);
             this.tableModel = tableModel;
@@ -797,25 +809,31 @@ public class temp extends JFrame {
         SwingUtilities.invokeLater(() -> new UserProfileScreen());
     }
 
-    // In all handleNavigation methods (UserProfileScreen, JobSearchScreen, UserAppScreen)
-@Override
-protected void handleNavigation(ActionEvent e) {
-    String command = ((JButton) e.getSource()).getText();
-    dispose(); // Close current window
-
-    switch (command) {
-        case "Profile":
-            new UserProfileScreen(); // Direct instantiation
-            break;
-        case "Search Jobs":
-            new JobSearchScreen();
-            break;
-        case "Applications":
-            new UserAppScreen();
-            break;
-        case "Logout":
-            System.exit(0);
-            break;
+    public static void launchUserDashboard() {
+        SwingUtilities.invokeLater(() -> new UserProfileScreen());
     }
-}
+    
+
+    // In all handleNavigation methods (UserProfileScreen, JobSearchScreen,
+    // UserAppScreen)
+    // @Override
+    // protected void handleNavigation(ActionEvent e) {
+    //     String command = ((JButton) e.getSource()).getText();
+    //     dispose(); // Close current window
+
+    //     switch (command) {
+    //         case "Profile":
+    //             new UserProfileScreen(); // Direct instantiation
+    //             break;
+    //         case "Search Jobs":
+    //             new JobSearchScreen();
+    //             break;
+    //         case "Applications":
+    //             new UserAppScreen();
+    //             break;
+    //         case "Logout":
+    //             System.exit(0);
+    //             break;
+    //     }
+    // }
 }
