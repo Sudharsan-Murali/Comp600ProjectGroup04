@@ -1,6 +1,10 @@
 package com.group04.merge;
 
 import javax.swing.*;
+
+import com.group04.GUI.JobPortalAppM;
+import com.group04.GUI.Admin.AdminDashboard;
+
 import java.awt.*;
 import java.awt.event.*;
 
@@ -123,10 +127,16 @@ public class JobPortalUI {
             if (loginSuccess) {
                 JOptionPane.showMessageDialog(frame, role + " login successful!");
 
-                if (role.equals("Recruiter")) {
-                    frame.dispose(); // Close the login window
-                    new RecruiterProfileScreen().createAndShowGUI(); // Open the recruiter dashboard
-                    return;
+                switch (role) {
+                    case "User":
+                        SwingUtilities.invokeLater(() -> new JobPortalAppM.UserProfileScreen());
+                        break;
+                    case "Recruiter":
+                        new RecruiterProfileScreen().createAndShowGUI();
+                        break;
+                    case "Admin":
+                        new AdminDashboard().createAndShowGUI();
+                        break;
                 }
             } else {
                 JOptionPane.showMessageDialog(frame, "Invalid credentials for " + role + ".", "Login Failed",
