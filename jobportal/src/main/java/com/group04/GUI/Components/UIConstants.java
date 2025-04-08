@@ -18,4 +18,5 @@ public class UIConstants {
     // Fonts
     public static final Font BUTTON_FONT = new Font("Arial", Font.PLAIN, 14);
     public static final Font TITLE_FONT = new Font("Arial", Font.BOLD, 24);
+    public static final Font NORMAL_FONT = null;
 }

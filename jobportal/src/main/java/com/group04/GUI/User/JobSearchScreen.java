@@ -2,7 +2,7 @@ package com.group04.GUI.User;
 
 import javax.swing.*;
 
-import com.group04.GUI.BaseScreen;
+import com.group04.GUI.User.BaseScreen;
 
 import java.awt.*;
 import java.awt.event.*;
