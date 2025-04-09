@@ -1,18 +1,28 @@
 package com.group04.GUI;
 
 import javax.swing.*;
-
+import com.group04.DAO.UserDAO;
+import com.group04.DAO.User;
 import com.group04.GUI.Admin.AdminDashboard;
 import com.group04.GUI.Recruiter.RecruiterProfileScreen;
 import com.group04.GUI.User.UserMerged;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 public class JobPortalApplication {
     JFrame frame;
     CardLayout layout;
     JPanel containerPanel;
+
+    private JTextField txtFirstName;
+    private JTextField txtLastName;
+    private JTextField txtEmail;
+    private JTextField txtMobile;
+    private JTextField txtDob;
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(JobPortalApplication::new);
@@ -115,35 +125,42 @@ public class JobPortalApplication {
             String inputEmail = email.getText();
             String inputPassword = new String(password.getPassword());
 
-            boolean loginSuccess = false;
-
-            if (role.equals("User")) {
-                loginSuccess = inputEmail.equals("user@example.com") && inputPassword.equals("user123");
-            } else if (role.equals("Recruiter")) {
-                loginSuccess = inputEmail.equals("recruiter@example.com") && inputPassword.equals("recruit123");
-            } else if (role.equals("Admin")) {
-                loginSuccess = inputEmail.equals("admin@example.com") && inputPassword.equals("admin123");
-            }
+            UserDAO userDAO = new UserDAO();
+            boolean loginSuccess = userDAO.loginUser(inputEmail, inputPassword); // Check login credentials
 
             if (loginSuccess) {
-                JOptionPane.showMessageDialog(frame, role + " login successful!");
+                // Get the roleId of the logged-in user
+                int roleId = userDAO.getRoleId(inputEmail);
 
-                switch (role) {
-                    case "User":
-                        SwingUtilities.invokeLater(() -> new UserMerged.UserProfileScreen());
-                        break;
-                    case "Recruiter":
-                        new RecruiterProfileScreen().createAndShowGUI();
-                        break;
-                    case "Admin":
-                        new AdminDashboard().createAndShowGUI();
-                        break;
+                // Check if the role matches the selected tab
+                if ((role.equals("User") && roleId == 1) ||
+                        (role.equals("Recruiter") && roleId == 2) ||
+                        (role.equals("Admin") && roleId == 3)) {
+
+                    // Navigate to the appropriate screen based on the roleId
+                    switch (roleId) {
+                        case 1: // User role
+                            SwingUtilities.invokeLater(() -> new UserMerged.UserProfileScreen());
+                            break;
+                        case 2: // Recruiter role
+                            new RecruiterProfileScreen().createAndShowGUI();
+                            break;
+                        case 3: // Admin role
+                            new AdminDashboard().createAndShowGUI();
+                            break;
+                        default:
+                            JOptionPane.showMessageDialog(frame, "Role not recognized.");
+                    }
+                } else {
+                    JOptionPane.showMessageDialog(frame, "Invalid credentials for the selected role.", "Login Failed",
+                            JOptionPane.ERROR_MESSAGE);
                 }
             } else {
-                JOptionPane.showMessageDialog(frame, "Invalid credentials for " + role + ".", "Login Failed",
+                JOptionPane.showMessageDialog(frame, "Invalid email or password.", "Login Failed",
                         JOptionPane.ERROR_MESSAGE);
             }
         });
+
         panel.add(loginButton, gbc);
 
         if (!role.equals("Admin")) {
@@ -194,27 +211,46 @@ public class JobPortalApplication {
         gbc.gridy = row;
         forgotFrame.add(new JLabel("Email:"), gbc);
         gbc.gridx = 1;
-        forgotFrame.add(new JTextField(20), gbc);
+        JTextField emailField = new JTextField(20);
+        forgotFrame.add(emailField, gbc);
 
         gbc.gridx = 0;
         gbc.gridy = ++row;
         forgotFrame.add(new JLabel("Security Question:"), gbc);
         gbc.gridx = 1;
-        forgotFrame.add(new JComboBox<>(new String[] {
+        JComboBox<String> questionBox = new JComboBox<>(new String[] {
                 "What is your mother's maiden name?",
                 "What was your first pet’s name?",
                 "What is your favorite book?"
-        }), gbc);
+        });
+        forgotFrame.add(questionBox, gbc);
 
         gbc.gridx = 0;
         gbc.gridy = ++row;
         forgotFrame.add(new JLabel("Answer:"), gbc);
         gbc.gridx = 1;
-        forgotFrame.add(new JTextField(20), gbc);
+        JTextField answerField = new JTextField(20);
+        forgotFrame.add(answerField, gbc);
 
+        JButton submitButton = new JButton("Submit");
+        submitButton.addActionListener(e -> {
+            String email = emailField.getText();
+            String question = (String) questionBox.getSelectedItem();
+            String answer = answerField.getText();
+
+            UserDAO userDAO = new UserDAO();
+            String password = userDAO.recoverPassword(email, question, answer);
+
+            if (password != null) {
+                JOptionPane.showMessageDialog(forgotFrame, "Your password is: " + password);
+            } else {
+                JOptionPane.showMessageDialog(forgotFrame, "Invalid email or answer.", "Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        });
         gbc.gridx = 1;
         gbc.gridy = ++row;
-        forgotFrame.add(new JButton("Submit"), gbc);
+        forgotFrame.add(submitButton, gbc);
 
         forgotFrame.setVisible(true);
     }
@@ -227,84 +263,87 @@ public class JobPortalApplication {
         regFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.NONE;
-        gbc.anchor = GridBagConstraints.WEST;
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
 
         int row = 0;
         gbc.gridx = 0;
         gbc.gridy = row;
         regFrame.add(new JLabel("First Name:"), gbc);
         gbc.gridx = 1;
-        regFrame.add(new JTextField(20), gbc);
+        txtFirstName = new JTextField(20);
+        regFrame.add(txtFirstName, gbc);
 
         gbc.gridx = 0;
         gbc.gridy = ++row;
         regFrame.add(new JLabel("Last Name:"), gbc);
         gbc.gridx = 1;
-        regFrame.add(new JTextField(20), gbc);
-
-        if (role.equals("Recruiter")) {
-            gbc.gridx = 0;
-            gbc.gridy = ++row;
-            regFrame.add(new JLabel("Company Email:"), gbc);
-            gbc.gridx = 1;
-            regFrame.add(new JTextField(20), gbc);
-            gbc.gridx = 0;
-            gbc.gridy = ++row;
-            regFrame.add(new JLabel("Company Mobile:"), gbc);
-            gbc.gridx = 1;
-            regFrame.add(new JTextField(20), gbc);
-        } else {
-            gbc.gridx = 0;
-            gbc.gridy = ++row;
-            regFrame.add(new JLabel("Email Address:"), gbc);
-            gbc.gridx = 1;
-            regFrame.add(new JTextField(20), gbc);
-            gbc.gridx = 0;
-            gbc.gridy = ++row;
-            regFrame.add(new JLabel("Mobile Number:"), gbc);
-            gbc.gridx = 1;
-            regFrame.add(new JTextField(20), gbc);
-            gbc.gridx = 0;
-            gbc.gridy = ++row;
-            regFrame.add(new JLabel("Date of Birth:"), gbc);
-            gbc.gridx = 1;
-            regFrame.add(new JTextField(20), gbc);
-        }
+        txtLastName = new JTextField(20);
+        regFrame.add(txtLastName, gbc);
 
         gbc.gridx = 0;
         gbc.gridy = ++row;
-        regFrame.add(new JLabel("Security Question:"), gbc);
+        regFrame.add(new JLabel("Email:"), gbc);
         gbc.gridx = 1;
-        regFrame.add(new JComboBox<>(new String[] {
-                "What is your mother's maiden name?",
-                "What was your first pet’s name?",
-                "What is your favorite book?"
-        }), gbc);
+        txtEmail = new JTextField(20);
+        regFrame.add(txtEmail, gbc);
 
         gbc.gridx = 0;
         gbc.gridy = ++row;
-        regFrame.add(new JLabel("Answer:"), gbc);
+        regFrame.add(new JLabel("Mobile:"), gbc);
         gbc.gridx = 1;
-        regFrame.add(new JTextField(20), gbc);
+        txtMobile = new JTextField(20);
+        regFrame.add(txtMobile, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = ++row;
+        regFrame.add(new JLabel("Date of Birth:"), gbc);
+        gbc.gridx = 1;
+        txtDob = new JTextField(20);
+        regFrame.add(txtDob, gbc);
 
         gbc.gridx = 0;
         gbc.gridy = ++row;
         regFrame.add(new JLabel("Password:"), gbc);
         gbc.gridx = 1;
-        regFrame.add(new JPasswordField(20), gbc);
+        JPasswordField txtPassword = new JPasswordField(20);
+        regFrame.add(txtPassword, gbc);
 
-        gbc.gridx = 0;
-        gbc.gridy = ++row;
-        regFrame.add(new JLabel("Confirm Password:"), gbc);
-        gbc.gridx = 1;
-        regFrame.add(new JPasswordField(20), gbc);
+        JButton regButton = new JButton("Register");
+        regButton.addActionListener(e -> {
+            String hashedPassword = hashPassword(new String(txtPassword.getPassword()));
+
+            User user = new User(txtFirstName.getText(), txtLastName.getText(), txtEmail.getText(),
+                    txtMobile.getText(), txtDob.getText(), hashedPassword);
+
+            UserDAO userDAO = new UserDAO();
+            if (userDAO.registerUser(user)) {
+                JOptionPane.showMessageDialog(regFrame, "Registration Successful!");
+                regFrame.dispose();
+            } else {
+                JOptionPane.showMessageDialog(regFrame, "Registration Failed. Try again later.");
+            }
+        });
 
         gbc.gridx = 1;
         gbc.gridy = ++row;
-        regFrame.add(new JButton("Sign Up"), gbc);
+        regFrame.add(regButton, gbc);
 
         regFrame.setVisible(true);
+    }
+
+    private String hashPassword(String password) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] encodedhash = digest.digest(password.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : encodedhash) {
+                hexString.append(String.format("%02x", b));
+            }
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 }

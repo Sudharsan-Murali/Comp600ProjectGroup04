@@ -3,6 +3,11 @@ package com.group04.GUI.User;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.*;
+
+import com.group04.GUI.User.Components.BaseScreen;
+import com.group04.GUI.User.Components.UIConstants;
+import com.group04.GUI.User.Components.UIUtils;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
@@ -11,96 +16,6 @@ import java.nio.charset.StandardCharsets;
 import javax.imageio.ImageIO;
 
 public class UserMerged extends JFrame {
-
-    // UIConstants class
-    private static class UIConstants {
-        public static final Color DARK_BG = new Color(33, 37, 41);
-        public static final Color BUTTON_BG = new Color(52, 58, 64);
-        public static final Color BUTTON_HOVER = new Color(73, 80, 87);
-        public static final Dimension SIDE_PANEL_SIZE = new Dimension(200, 600);
-        public static final Dimension BUTTON_SIZE = new Dimension(180, 40);
-        public static final Font BUTTON_FONT = new Font("Arial", Font.PLAIN, 14);
-        public static final Font TITLE_FONT = new Font("Arial", Font.BOLD, 24);
-        public static final Font NORMAL_FONT = new Font("Arial", Font.PLAIN, 14);
-    }
-
-    // HoverEffectMouseAdapter
-    private static class HoverEffectMouseAdapter extends MouseAdapter {
-        @Override
-        public void mouseEntered(MouseEvent e) {
-            ((JComponent) e.getSource()).setBackground(UIConstants.BUTTON_HOVER);
-        }
-
-        @Override
-        public void mouseExited(MouseEvent e) {
-            ((JComponent) e.getSource()).setBackground(UIConstants.BUTTON_BG);
-        }
-    }
-
-    // ButtonFactory
-    private static class ButtonFactory {
-        public static JButton createSideButton(String text) {
-            JButton button = new JButton(text);
-            button.setAlignmentX(Component.CENTER_ALIGNMENT);
-            button.setMaximumSize(UIConstants.BUTTON_SIZE);
-            button.setBackground(UIConstants.BUTTON_BG);
-            button.setForeground(Color.WHITE);
-            button.setFocusPainted(false);
-            button.setBorderPainted(false);
-            button.setFont(UIConstants.BUTTON_FONT);
-            button.addMouseListener(new HoverEffectMouseAdapter());
-            return button;
-        }
-    }
-
-    // UIUtils
-    private static class UIUtils {
-        public static JLabel createTitleLabel(String title, String iconPath) {
-            try {
-                BufferedImage icon = ImageIO.read(new File(iconPath));
-                Image scaledIcon = icon.getScaledInstance(24, 24, Image.SCALE_SMOOTH);
-                JLabel label = new JLabel(title, new ImageIcon(scaledIcon), JLabel.LEFT);
-                label.setFont(UIConstants.TITLE_FONT);
-                return label;
-            } catch (Exception e) {
-                JLabel label = new JLabel(title);
-                label.setFont(UIConstants.TITLE_FONT);
-                return label;
-            }
-        }
-    }
-
-    // SidePanel
-    private static class SidePanel extends JPanel {
-        public SidePanel(ActionListener listener) {
-            setBackground(UIConstants.DARK_BG);
-            setPreferredSize(UIConstants.SIDE_PANEL_SIZE);
-            setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-            add(Box.createRigidArea(new Dimension(0, 40)));
-
-            String[] buttons = { "Profile", "Applications", "Search Jobs", "Logout" };
-            for (String btn : buttons) {
-                JButton button = ButtonFactory.createSideButton(btn);
-                button.addActionListener(listener);
-                add(Box.createRigidArea(new Dimension(0, 20)));
-                add(button);
-            }
-        }
-    }
-
-    // BaseScreen
-    private abstract static class BaseScreen extends JFrame {
-        public BaseScreen(String title) {
-            super(title);
-            setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            setSize(900, 700);
-            setLayout(new BorderLayout());
-            add(new SidePanel(this::handleNavigation), BorderLayout.WEST);
-        }
-
-        protected abstract void handleNavigation(ActionEvent e);
-    }
-
     // UserProfileScreen
     public static class UserProfileScreen extends BaseScreen {
         private JLabel profilePicLabel;
@@ -812,28 +727,4 @@ public class UserMerged extends JFrame {
     public static void launchUserDashboard() {
         SwingUtilities.invokeLater(() -> new UserProfileScreen());
     }
-    
-
-    // In all handleNavigation methods (UserProfileScreen, JobSearchScreen,
-    // UserAppScreen)
-    // @Override
-    // protected void handleNavigation(ActionEvent e) {
-    //     String command = ((JButton) e.getSource()).getText();
-    //     dispose(); // Close current window
-
-    //     switch (command) {
-    //         case "Profile":
-    //             new UserProfileScreen(); // Direct instantiation
-    //             break;
-    //         case "Search Jobs":
-    //             new JobSearchScreen();
-    //             break;
-    //         case "Applications":
-    //             new UserAppScreen();
-    //             break;
-    //         case "Logout":
-    //             System.exit(0);
-    //             break;
-    //     }
-    // }
 }

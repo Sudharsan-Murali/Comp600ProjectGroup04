@@ -7,8 +7,8 @@ import java.sql.SQLException;
 public class DatabaseConnection {
 
     // Replace "job_portal" with your actual DB name if different
-    private static final String URL = "jdbc:mysql://localhost:3306/";
-    // private static final String URL = "jdbc:mysql://localhost:3306/job_portal?useSSL=false&serverTimezone=UTC";
+    //private static final String URL = "jdbc:mysql://localhost:3306/";
+    private static final String URL = "jdbc:mysql://localhost:3306/job_portal?useSSL=false&serverTimezone=UTC";
     private static final String USER = "root";  // Your MySQL username
     private static final String PASSWORD = "root";  // Your MySQL password
 
