@@ -6,6 +6,7 @@ import com.group04.DAO.User;
 import com.group04.GUI.Admin.AdminDashboard;
 import com.group04.GUI.Recruiter.RecruiterProfileScreen;
 import com.group04.GUI.User.UserMerged;
+import com.group04.GUI.User.UserProfileScreen;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -140,7 +141,10 @@ public class JobPortalApplication {
                     // Navigate to the appropriate screen based on the roleId
                     switch (roleId) {
                         case 1: // User role
-                            SwingUtilities.invokeLater(() -> new UserMerged.UserProfileScreen());
+                        SwingUtilities.invokeLater(() -> {
+                            // frame.dispose();  
+                            new UserProfileScreen();
+                        });
                             break;
                         case 2: // Recruiter role
                             new RecruiterProfileScreen().createAndShowGUI();
