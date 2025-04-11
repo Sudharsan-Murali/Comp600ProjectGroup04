@@ -19,8 +19,9 @@ import com.group04.GUI.User.Components.BaseScreen;
 import com.group04.GUI.User.Components.ButtonFactory;
 
 public class UserProfileScreen extends BaseScreen {
-    public UserProfileScreen(String title) {
-        super(title);
+    public UserProfileScreen(String userEmail) {
+        super("User Profile");
+        this.loggedInEmail = userEmail;  // now the email is stored
         // TODO Auto-generated constructor stub
         txtFirstName = new JTextField(25);
         txtLastName = new JTextField(25);
@@ -693,7 +694,7 @@ public class UserProfileScreen extends BaseScreen {
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new UserProfileScreen(loggedInEmail));
+        SwingUtilities.invokeLater(() -> new UserProfileScreen("Pg991@example.com"));
     }
 
     private void loadUserData() {
@@ -713,6 +714,6 @@ public class UserProfileScreen extends BaseScreen {
         } else {
             JOptionPane.showMessageDialog(this, "User data not found.", "Error", JOptionPane.ERROR_MESSAGE);
         }
+        System.out.println("DEBUG: loggedInEmail = " + loggedInEmail);
     }
-
 }
