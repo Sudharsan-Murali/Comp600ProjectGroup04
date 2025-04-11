@@ -107,8 +107,8 @@ public class UserDAO {
                 user.setMobile(rs.getString("mobile"));
                 user.setDob(rs.getString("dob"));
                 user.setRole(rs.getInt("role_id"));
-                user.setSecurityQuestion(rs.getString("security_question"));
-                user.setSecurityAnswer(rs.getString("security_answer"));
+                user.setSecurityQuestion(rs.getString("security_que"));
+                user.setSecurityAnswer(rs.getString("security_ans"));
             } else {
                 System.out.println("No user found with email: " + email);
             }

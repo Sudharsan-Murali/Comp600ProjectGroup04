@@ -143,7 +143,7 @@ public class JobPortalApplication {
                         case 1: // User role
                         SwingUtilities.invokeLater(() -> {
                             // frame.dispose();  
-                            new UserProfileScreen();
+                            new UserProfileScreen(inputEmail);
                         });
                             break;
                         case 2: // Recruiter role
