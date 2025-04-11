@@ -129,7 +129,8 @@ public class JobPortalApplication {
 
             UserDAO userDAO = new UserDAO();
             boolean loginSuccess = userDAO.loginUser(inputEmail, inputPassword); // Check login credentials
-            // boolean loginSuccess = userDAO.loginUser(inputEmail, hashedPassword); // Check login credentials
+            // boolean loginSuccess = userDAO.loginUser(inputEmail, hashedPassword); //
+            // Check login credentials
 
             if (loginSuccess) {
                 // Get the roleId of the logged-in user
@@ -143,11 +144,9 @@ public class JobPortalApplication {
                     // Navigate to the appropriate screen based on the roleId
                     switch (roleId) {
                         case 1: // User role
-                        SwingUtilities.invokeLater(() -> {
-                            // frame.dispose();  
-                            new UserProfileScreen(inputEmail);
-                        });
+                            SwingUtilities.invokeLater(() -> new UserProfileScreen(inputEmail));
                             break;
+
                         case 2: // Recruiter role
                             new RecruiterProfileScreen().createAndShowGUI();
                             break;

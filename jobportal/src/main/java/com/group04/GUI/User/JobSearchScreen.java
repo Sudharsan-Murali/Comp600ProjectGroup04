@@ -10,8 +10,11 @@ import com.group04.GUI.User.Components.ButtonFactory;
 
 public class JobSearchScreen extends BaseScreen {
 
-    public JobSearchScreen() {
+    private String userEmail;
+
+    public JobSearchScreen(String email) {
         super("Job Search");
+        this.userEmail = email;
         initializeUI();
     }
 
@@ -61,25 +64,24 @@ public class JobSearchScreen extends BaseScreen {
 
     private JSplitPane createJobContentSplitPane() {
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-    
+
         // Initialize the left panel
         JPanel leftPanel = new JPanel();
         leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS)); // Set layout for leftPanel
         leftPanel.setPreferredSize(new Dimension(350, 500));
         leftPanel.add(new JLabel("Results will appear here..."));
-    
+
         // Right panel
         JPanel rightPanel = new JPanel(new BorderLayout());
         JTextArea jobDetailsArea = new JTextArea("Select a job to view details");
         rightPanel.add(new JScrollPane(jobDetailsArea), BorderLayout.CENTER);
-    
+
         // Set the left and right components of the split pane
         splitPane.setLeftComponent(leftPanel);
         splitPane.setRightComponent(rightPanel);
-    
+
         return splitPane;
     }
-    
 
     @Override
     protected void handleNavigation(ActionEvent e) {
@@ -88,10 +90,10 @@ public class JobSearchScreen extends BaseScreen {
 
         switch (command) {
             case "Profile":
-                SwingUtilities.invokeLater(() -> new UserProfileScreen());
+                SwingUtilities.invokeLater(() -> new UserProfileScreen(userEmail));
                 break;
             case "Search Jobs":
-                SwingUtilities.invokeLater(() -> new JobSearchScreen());
+                SwingUtilities.invokeLater(() -> new JobSearchScreen(userEmail));
                 break;
             case "Applications":
                 SwingUtilities.invokeLater(() -> new UserAppscreen());
@@ -111,7 +113,8 @@ public class JobSearchScreen extends BaseScreen {
 
     // @Override
     // protected void handleNavigation(ActionEvent e) {
-    //     // TODO Auto-generated method stub
-    //     throw new UnsupportedOperationException("Unimplemented method 'handleNavigation'");
+    // // TODO Auto-generated method stub
+    // throw new UnsupportedOperationException("Unimplemented method
+    // 'handleNavigation'");
     // }
 }
