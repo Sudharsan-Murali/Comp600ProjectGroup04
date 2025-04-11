@@ -19,6 +19,24 @@ import com.group04.GUI.User.Components.BaseScreen;
 import com.group04.GUI.User.Components.ButtonFactory;
 
 public class UserProfileScreen extends BaseScreen {
+
+    private String loggedInEmail;
+    private JLabel profilePicLabel;
+    private JButton uploadButton, removeButton;
+    private JPanel rightPanel; // Right panel uses CardLayout for smooth transitions.
+
+    private JTextField txtFirstName;
+    private JTextField txtLastName;
+    private JTextField txtEmail;
+    private JTextField txtPhone;
+    private JTextField txtCompany;
+    private JTextField txtJobRole;
+    private JTextField txtPreferences;
+    private JTextField txtLinkedIn;
+    private JTextField txtAvailability;
+
+    private File resumeFile; // This will hold the selected resume file.
+
     public UserProfileScreen(String userEmail) {
         super("User Profile");
         this.loggedInEmail = userEmail;  // now the email is stored
@@ -46,22 +64,6 @@ public class UserProfileScreen extends BaseScreen {
 
         setVisible(true);
     }
-
-    private static String loggedInEmail;
-    private JLabel profilePicLabel;
-    private JButton uploadButton, removeButton;
-    private JPanel rightPanel; // Right panel uses CardLayout for smooth transitions.
-
-    private JTextField txtFirstName;
-    private JTextField txtLastName;
-    private JTextField txtEmail;
-    private JTextField txtPhone;
-    private JTextField txtCompany;
-    private JTextField txtJobRole;
-    private JTextField txtPreferences;
-    private JTextField txtLinkedIn;
-    private JTextField txtAvailability;
-    private File resumeFile; // This will hold the selected resume file.
 
     public User getUserProfile(String email) {
         String query = "SELECT first_name, last_name, email, mobile, dob, role_id, security_que, security_ans, company, job_role, preferences, linkedin_url, availability FROM users WHERE email = ?";
@@ -507,7 +509,6 @@ public class UserProfileScreen extends BaseScreen {
         gbc.gridx = 0;
         gbc.gridy = 4;
         formPanel.add(new JLabel("LinkedIn URL:"), gbc);
-
         gbc.gridx = 1;
         formPanel.add(txtLinkedIn, gbc); // Use instance variable
 
@@ -515,7 +516,6 @@ public class UserProfileScreen extends BaseScreen {
         gbc.gridx = 0;
         gbc.gridy = 5;
         formPanel.add(new JLabel("Availability:"), gbc);
-
         gbc.gridx = 1;
         formPanel.add(txtAvailability, gbc); // Use instance variable
 
@@ -595,12 +595,8 @@ public class UserProfileScreen extends BaseScreen {
 
         if (resumeFile != null) {
             System.out.println("Resume file selected: " + resumeFile.getAbsolutePath());
-            // Add your logic for processing the resume file.
-            // For example, copy the file to a destination folder:
-            // File destination = new File("path/to/storage/" + resumeFile.getName());
-            // Files.copy(resumeFile.toPath(), destination.toPath(),
-            // StandardCopyOption.REPLACE_EXISTING);
-        }
+             // Process the file, e.g., copy to server or store path in DB.
+            }
     }
 
     /**
@@ -693,9 +689,9 @@ public class UserProfileScreen extends BaseScreen {
         // SwingUtilities.invokeLater(() -> new com.group04.GUI.JobPortalApplication());
     }
 
-    public static void main(String[] args) {
+    /*public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new UserProfileScreen("Pg991@example.com"));
-    }
+    } */
 
     private void loadUserData() {
         UserDAO userDAO = new UserDAO();

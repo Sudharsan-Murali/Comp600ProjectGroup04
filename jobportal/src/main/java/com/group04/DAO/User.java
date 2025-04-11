@@ -11,11 +11,13 @@ public class User {
     private int role;
     private String securityQuestion;
     private String securityAnswer;
-    private String availability;
+    
+    // Additional fields based on your schema.
     private String company;
-    private String preferences;
     private String jobRole;
+    private String preferences;
     private String linkedInUrl;
+    private String availability;
 
     // Constructors
     public User() {}
@@ -28,8 +30,10 @@ public class User {
         this.dob = dob;
         this.password = password;
     }
-
-    public User(int id, String firstName, String lastName, String email, String mobile, String dob, String password, int roleId, String securityQuestion, String securityAnswer) {
+    
+    // Basic constructor with role and security info (can be used for registration)
+    public User(int id, String firstName, String lastName, String email, String mobile, String dob,
+                String password, int roleId, String securityQuestion, String securityAnswer) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -41,8 +45,11 @@ public class User {
         this.securityQuestion = securityQuestion;
         this.securityAnswer = securityAnswer;
     }
-
-    public User(String firstName, String lastName, String email, String mobile, String dob, String password, int roleId, String securityQuestion, String securityAnswer) {
+    
+    // Optional: You can add another constructor that accepts the extra fields as well.
+    public User(String firstName, String lastName, String email, String mobile, String dob, String password,
+                int roleId, String securityQuestion, String securityAnswer,
+                String company, String jobRole, String preferences, String linkedInUrl, String availability) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
@@ -52,9 +59,14 @@ public class User {
         this.role = roleId;
         this.securityQuestion = securityQuestion;
         this.securityAnswer = securityAnswer;
+        this.company = company;
+        this.jobRole = jobRole;
+        this.preferences = preferences;
+        this.linkedInUrl = linkedInUrl;
+        this.availability = availability;
     }
 
-    // Getters and Setters (you can generate via IDE)
+    // Getters and Setters for existing fields.
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
 
@@ -85,38 +97,19 @@ public class User {
     public String getSecurityAnswer() { return securityAnswer; }
     public void setSecurityAnswer(String securityAnswer) { this.securityAnswer = securityAnswer; }
 
-    public String getCompany() {
-        return company;
-    }
-    public void setCompany(String company) {
-        this.company = company;
-    }
+    // Getters and Setters for the additional fields.
+    public String getCompany() { return company; }
+    public void setCompany(String company) { this.company = company; }
 
-    public String getJobRole() {
-        return jobRole;
-    }
-    public void setJobRole(String jobRole) {
-        this.jobRole = jobRole;
-    }
+    public String getJobRole() { return jobRole; }
+    public void setJobRole(String jobRole) { this.jobRole = jobRole; }
 
-    public String getPreferences() {
-        return preferences;
-    }
-    public void setPreferences(String preferences) {
-        this.preferences = preferences;
-    }
+    public String getPreferences() { return preferences; }
+    public void setPreferences(String preferences) { this.preferences = preferences; }
 
-    public String getLinkedInUrl() {
-        return linkedInUrl;
-    }
-    public void setLinkedInUrl(String linkedInUrl) {
-        this.linkedInUrl = linkedInUrl;
-    }
+    public String getLinkedInUrl() { return linkedInUrl; }
+    public void setLinkedInUrl(String linkedInUrl) { this.linkedInUrl = linkedInUrl; }
 
-    public String getAvailability() {
-        return availability;
-    }
-    public void setAvailability(String availability) {
-        this.availability = availability;
-    }
+    public String getAvailability() { return availability; }
+    public void setAvailability(String availability) { this.availability = availability; }
 }
