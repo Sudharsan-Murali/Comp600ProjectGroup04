@@ -1,6 +1,8 @@
 package com.group04.DAO;
 
 import java.sql.*;
+import java.util.HashMap;
+import java.util.Map;
 
 public class UserDAO {
 
@@ -21,7 +23,7 @@ public class UserDAO {
     // (Registration currently does not include extra fields.)
     public boolean registerUser(User user) {
         String query = "INSERT INTO Users (First_name, Last_name, Email, Mobile, Dob, Password, Role_ID, Security_Que, Security_Ans) "
-                     + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setString(1, user.getFirstName());
             stmt.setString(2, user.getLastName());
@@ -89,8 +91,8 @@ public class UserDAO {
     public User getUserProfile(String email) {
         // Updated query to fetch extra columns.
         String query = "SELECT First_name, Last_name, Email, Mobile, Dob, Role_ID, Security_Que, Security_Ans, " +
-                       "Company_ID, Job_role, Skill_1, Skill_2, Skill_3, Skill_4, LinkedIN_url, Availability " +
-                       "FROM Users WHERE Email = ?";
+                "Company_ID, Job_role, Skill_1, Skill_2, Skill_3, Skill_4, LinkedIN_url, Availability " +
+                "FROM Users WHERE Email = ?";
         User user = null;
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setString(1, email);
@@ -154,8 +156,9 @@ public class UserDAO {
     public boolean updateUserProfile(User user) {
         // Updated query to include extra fields.
         String query = "UPDATE Users SET First_name = ?, Last_name = ?, Mobile = ?, Dob = ?, Password = ?, " +
-                       "Security_Que = ?, Security_Ans = ?, Company_ID = ?, Job_role = ?, LinkedIN_url = ?, Availability = ? " +
-                       "WHERE Email = ?";
+                "Security_Que = ?, Security_Ans = ?, Company_ID = ?, Job_role = ?, LinkedIN_url = ?, Availability = ? "
+                +
+                "WHERE Email = ?";
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setString(1, user.getFirstName());
             stmt.setString(2, user.getLastName());
@@ -175,4 +178,87 @@ public class UserDAO {
             return false;
         }
     }
+
+    /*
+     * RECRUITER SECTION
+     */
+    public Map<String, String> getRecruiterInfoByEmail(String email) {
+        Map<String, String> recruiterInfo = new HashMap<>();
+
+        String sql = "SELECT u.First_name, u.Last_name, u.Email, c.Company_name, c.Company_location, " +
+                "u.Mobile, u.LinkedIN_url, c.Company_Website " +
+                "FROM Users u " +
+                "JOIN Company c ON u.Company_ID = c.Company_ID " +
+                "WHERE u.Email = ? AND u.Role_ID = 2";
+
+        try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, email);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                recruiterInfo.put("First Name", rs.getString("First_name"));
+                recruiterInfo.put("Last Name", rs.getString("Last_name"));
+                recruiterInfo.put("Email", rs.getString("Email"));
+                recruiterInfo.put("Company Name", rs.getString("Company_name"));
+                recruiterInfo.put("Company Address", rs.getString("Company_location"));
+                recruiterInfo.put("Company Phone", rs.getString("Mobile")); // treating user mobile as company phone
+                recruiterInfo.put("Company LinkedIn", rs.getString("LinkedIN_url"));
+                recruiterInfo.put("Company Website", rs.getString("Company_Website")); // Optional placeholder
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return recruiterInfo;
+    }
+
+    public boolean updateRecruiterProfile(String email, String companyName, String companyAddress,
+            String companyPhone, String linkedinUrl, String website) {
+
+        String sql = "UPDATE Company c " +
+                "JOIN Users u ON u.Company_ID = c.Company_ID " +
+                "SET c.Company_name = ?, c.Company_location = ?, u.Mobile = ?, u.LinkedIN_url = ?, c.Company_Website = ? "
+                +
+                "WHERE u.Email = ? AND u.Role_ID = 2";
+
+        try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, companyName);
+            stmt.setString(2, companyAddress);
+            stmt.setString(3, companyPhone);
+            stmt.setString(4, linkedinUrl);
+            stmt.setString(5, website); // <-- new field added
+            stmt.setString(6, email); // <-- now at index 6 instead of 5
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean updateRecruiterProfilePicture(String email, byte[] imageBytes) {
+        String sql = "UPDATE Users SET Profile_pic = ? WHERE Email = ? AND Role_ID = 2";
+        try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setBytes(1, imageBytes);
+            stmt.setString(2, email);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public byte[] getRecruiterProfilePicture(String email) {
+        String sql = "SELECT Profile_pic FROM Users WHERE Email = ? AND Role_ID = 2";
+        try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, email);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getBytes("Profile_pic"); // Might return null if no image saved yet
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
 }

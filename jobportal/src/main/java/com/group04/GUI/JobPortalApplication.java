@@ -148,7 +148,7 @@ public class JobPortalApplication {
                             break;
 
                         case 2: // Recruiter role
-                            new RecruiterProfileScreen().createAndShowGUI();
+                            new RecruiterProfileScreen(inputEmail).createAndShowGUI();
                             break;
                         case 3: // Admin role
                             new AdminDashboard().createAndShowGUI();
