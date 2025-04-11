@@ -3,7 +3,7 @@ package com.group04.GUI;
 import javax.swing.*;
 import com.group04.DAO.UserDAO;
 import com.group04.DAO.User;
-import com.group04.GUI.Admin.AdminDashboard;
+import com.group04.GUI.Admin.AdminDashboard;    
 import com.group04.GUI.Recruiter.RecruiterProfileScreen;
 import com.group04.GUI.User.UserMerged;
 import com.group04.GUI.User.UserProfileScreen;

@@ -51,6 +51,13 @@ public class UserProfileScreen extends BaseScreen {
         txtLinkedIn = new JTextField(25);
         txtAvailability = new JTextField(25);
 
+        // Make non-updateable fields read-only.
+        txtFirstName.setEditable(false);
+        txtLastName.setEditable(false);
+        txtEmail.setEditable(false);
+        txtPhone.setEditable(false);
+        txtPreferences.setEditable(false);
+        
         // Now build the UI.
         initializeUIWithCards();
         // Other UI settings
@@ -205,11 +212,12 @@ public class UserProfileScreen extends BaseScreen {
         savePanel.setOpaque(false);
         JButton saveButton = new JButton("SAVE");
         saveButton.setPreferredSize(new Dimension(100, 30));
-        // You can add an ActionListener to saveButton if needed.
+        saveButton.addActionListener(e -> saveProfileData()); 
         savePanel.add(saveButton);
-
+        
         contentPanel.add(Box.createVerticalStrut(10));
         contentPanel.add(savePanel);
+        
 
         panel.add(contentPanel, BorderLayout.CENTER);
         return panel;
@@ -586,18 +594,51 @@ public class UserProfileScreen extends BaseScreen {
     }
 
     private void saveProfileData() {
-        // Retrieve field values from instance variables.
-        String firstName = txtFirstName.getText();
-        String lastName = txtLastName.getText();
-        // Additional field values...
+        // Create a new User object for the update.
+        User updatedUser = new User();
+        
+        // Set non-updateable (read-only) fields from pre-loaded data.
+        updatedUser.setFirstName(txtFirstName.getText());              // Not editable
+        updatedUser.setLastName(txtLastName.getText());                // Not editable
+        updatedUser.setEmail(txtEmail.getText());                      // Not editable
+        updatedUser.setMobile(txtPhone.getText());                     // Not editable
+        updatedUser.setPreferences(txtPreferences.getText());          // Not editable
+        
+        // Set editable fields (which the user may have updated).
+        updatedUser.setCompany(txtCompany.getText());
+        updatedUser.setJobRole(txtJobRole.getText());
 
-        System.out.println("Profile data saved.");
+        updatedUser.setLinkedInUrl(txtLinkedIn.getText());
+        updatedUser.setAvailability(txtAvailability.getText());
 
+         // Debug prints:
+        System.out.println("DEBUG: Company = " + updatedUser.getCompany());
+        System.out.println("DEBUG: JobRole = " + updatedUser.getJobRole());
+        System.out.println("DEBUG: LinkedIN URL = " + updatedUser.getLinkedInUrl());
+        System.out.println("DEBUG: Availability = " + updatedUser.getAvailability());
+            
+        // The Email is used as a key; it remains the same.
+        // Create a new UserDAO instance and update the record.
+        UserDAO userDAO = new UserDAO();
+        boolean updateSuccess = userDAO.updateUserProfile(updatedUser);
+        
+        if (updateSuccess) {
+            JOptionPane.showMessageDialog(this, 
+                    "Changes updated successfully.", 
+                    "Success", JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(this, 
+                    "Error updating changes.", 
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+        
+        // Optionally, process the resume file if needed.
         if (resumeFile != null) {
             System.out.println("Resume file selected: " + resumeFile.getAbsolutePath());
-             // Process the file, e.g., copy to server or store path in DB.
-            }
+            // Add additional resume processing here if needed.
+        }
     }
+    
 
     /**
      * Adds an individual form field (label and text field) to the given panel.
