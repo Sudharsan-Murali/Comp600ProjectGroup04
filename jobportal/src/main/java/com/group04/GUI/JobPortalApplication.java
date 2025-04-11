@@ -125,9 +125,11 @@ public class JobPortalApplication {
         loginButton.addActionListener(e -> {
             String inputEmail = email.getText();
             String inputPassword = new String(password.getPassword());
+            // String hashedPassword = hashPassword(inputPassword);
 
             UserDAO userDAO = new UserDAO();
             boolean loginSuccess = userDAO.loginUser(inputEmail, inputPassword); // Check login credentials
+            // boolean loginSuccess = userDAO.loginUser(inputEmail, hashedPassword); // Check login credentials
 
             if (loginSuccess) {
                 // Get the roleId of the logged-in user
