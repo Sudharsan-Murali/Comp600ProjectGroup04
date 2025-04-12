@@ -1,7 +1,9 @@
 package com.group04.DAO;
 
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class UserDAO {
@@ -427,6 +429,33 @@ public class UserDAO {
             e.printStackTrace();
         }
         return -1;
+    }
+
+    public List<Map<String, Object>> getJobPostsByUserId(int userId) {
+        List<Map<String, Object>> jobPosts = new ArrayList<>();
+        String sql = "SELECT Job_ID, Job_Title, Date_Of_Application, Job_Type, Job_location FROM recruiters_applications WHERE user_ID = ?";
+
+        try (Connection conn = getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, userId);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                Map<String, Object> row = new HashMap<>();
+                row.put("Job_ID", rs.getInt("Job_ID"));
+                row.put("Job_Title", rs.getString("Job_Title"));
+                row.put("Date_Of_Application", rs.getDate("Date_Of_Application"));
+                row.put("Job_Type", rs.getInt("Job_Type"));
+                row.put("Job_location", rs.getString("Job_location"));
+                jobPosts.add(row);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return jobPosts;
     }
 
 }

@@ -5,20 +5,16 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableColumnModel;
 import java.awt.*;
-import java.awt.event.*;
 import java.io.File;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.util.Map;
 
+import java.util.List;
 import com.group04.DAO.UserDAO;
-import com.group04.GUI.JobPortalApplication; // For handling the logout action
 import com.group04.GUI.Components.ButtonEditor;
 import com.group04.GUI.Components.ButtonFactory;
 import com.group04.GUI.Components.ButtonRenderer;
-import com.group04.GUI.Components.SidePanel;
-import com.group04.GUI.Components.UIConstants;
-import com.group04.GUI.Components.UIUtils;
 
 public class RecruiterProfileScreen {
 
@@ -404,7 +400,7 @@ public class RecruiterProfileScreen {
         rightPanel.setLayout(new BorderLayout());
         rightPanel.setBackground(Color.WHITE);
 
-        // Create a header panel combining a left-aligned title and the "ADD" button
+        // 1. Add Header (with ADD button)
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setBackground(Color.WHITE);
         JLabel titleLabel = new JLabel("Job Posts");
@@ -413,7 +409,6 @@ public class RecruiterProfileScreen {
         headerPanel.add(titleLabel, BorderLayout.WEST);
 
         JButton addJobButton = new JButton("ADD");
-        // Add an ActionListener to redirect to the Add Job Post screen when clicked.
         addJobButton.addActionListener(e -> showAddJobPostsScreen());
 
         JPanel addButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -421,87 +416,54 @@ public class RecruiterProfileScreen {
         addButtonPanel.add(addJobButton);
         headerPanel.add(addButtonPanel, BorderLayout.EAST);
 
-        // Job Table: styling similar to the Applications screen
-        String[] columnNames = { "S.NO", "JOB TITLE", "DATE POSTED", "NUMBER", "STATUS", "EDIT", "DELETE", "DUE DATE" };
-        Object[][] data = new Object[10][8]; // Placeholder data
-        JTable jobTable = new JTable(data, columnNames);
-        jobTable.setRowHeight(30);
-        jobTable.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        jobTable.setGridColor(new Color(189, 195, 199));
-        jobTable.setShowGrid(true);
-        jobTable.setIntercellSpacing(new Dimension(5, 5));
-        jobTable.setBackground(Color.WHITE);
-
-        // Style the table header
-        JTableHeader header = jobTable.getTableHeader();
-        header.setPreferredSize(new Dimension(header.getPreferredSize().width, 35));
-        header.setFont(new Font("SansSerif", Font.BOLD, 16));
-        header.setBackground(new Color(52, 73, 94));
-        header.setForeground(Color.WHITE);
-
-        // Set proper column widths
-        TableColumnModel columnModel = jobTable.getColumnModel();
-        columnModel.getColumn(0).setPreferredWidth(50);
-        columnModel.getColumn(1).setPreferredWidth(70);
-        columnModel.getColumn(2).setPreferredWidth(120);
-        columnModel.getColumn(3).setPreferredWidth(150);
-        columnModel.getColumn(4).setPreferredWidth(100);
-        columnModel.getColumn(5).setPreferredWidth(80);
-        columnModel.getColumn(6).setPreferredWidth(80);
-        columnModel.getColumn(7).setPreferredWidth(50);
-
-        // Extend columns to fill available width.
-        jobTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-
-        // Edit Button
-        jobTable.getColumnModel().getColumn(5).setCellRenderer(new ButtonRenderer("Edit"));
-        jobTable.getColumnModel().getColumn(5).setCellEditor(new ButtonEditor("Edit", jobTable, row -> {
-            // Handle Edit logic (e.g., open job edit form)
-            System.out.println("Edit clicked for row " + row);
-        }));
-
-        // Delete Button
-        jobTable.getColumnModel().getColumn(6).setCellRenderer(new ButtonRenderer("Delete"));
-        jobTable.getColumnModel().getColumn(6).setCellEditor(new ButtonEditor("Delete", jobTable, row -> {
-            int confirm = JOptionPane.showConfirmDialog(frame,
-                    "Are you sure you want to delete this job post?",
-                    "Confirm Delete", JOptionPane.YES_NO_OPTION);
-            if (confirm == JOptionPane.YES_OPTION) {
-                System.out.println("Deleting row " + row);
-                // Add code to delete job from DB and refresh the table
-            }
-        }));
-
-        JScrollPane tableScrollPane = new JScrollPane(jobTable);
-        tableScrollPane.getViewport().setBackground(Color.WHITE);
-
-        // Footer for pagination
-        JPanel footerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        footerPanel.setBackground(Color.WHITE);
-        JButton prevButton = new JButton("<");
-        JButton nextButton = new JButton(">");
-        pageLabel = new JLabel("Page " + currentPage);
-        prevButton.addActionListener(e -> {
-            if (currentPage > 1) {
-                currentPage--;
-                updatePageLabel();
-            }
-        });
-        nextButton.addActionListener(e -> {
-            currentPage++;
-            updatePageLabel();
-        });
-        footerPanel.add(prevButton);
-        footerPanel.add(pageLabel);
-        footerPanel.add(nextButton);
-
         rightPanel.add(headerPanel, BorderLayout.NORTH);
-        rightPanel.add(tableScrollPane, BorderLayout.CENTER);
-        rightPanel.add(footerPanel, BorderLayout.SOUTH);
+
+        // 2. Get job posts
+        List<Map<String, Object>> jobPosts = new UserDAO().getJobPostsByUserId(userID);
+
+        if (jobPosts.isEmpty()) {
+            JLabel noDataLabel = new JLabel("No Data Found", JLabel.CENTER);
+            noDataLabel.setFont(new Font("SansSerif", Font.BOLD, 22));
+            noDataLabel.setForeground(Color.GRAY);
+            rightPanel.add(noDataLabel, BorderLayout.CENTER);
+        } else {
+            // 3. Display job posts in table
+            String[] columnNames = { "S.NO", "JOB TITLE", "DATE POSTED", "LOCATION", "EDIT", "DELETE" };
+            Object[][] data = new Object[jobPosts.size()][6];
+
+            for (int i = 0; i < jobPosts.size(); i++) {
+                Map<String, Object> row = jobPosts.get(i);
+                data[i][0] = i + 1;
+                data[i][1] = row.get("Job_Title");
+                data[i][2] = row.get("Date_Of_Application");
+                data[i][3] = row.get("Job_location");
+                data[i][4] = "Edit";
+                data[i][5] = "Delete";
+            }
+
+            JTable jobTable = new JTable(data, columnNames);
+            jobTable.setRowHeight(30);
+            jobTable.setFont(new Font("SansSerif", Font.PLAIN, 14));
+            jobTable.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 16));
+
+            jobTable.getColumnModel().getColumn(4).setCellRenderer(new ButtonRenderer("Edit"));
+            jobTable.getColumnModel().getColumn(4).setCellEditor(new ButtonEditor("Edit", jobTable, row -> {
+                System.out.println("Edit clicked for row " + row);
+            }));
+
+            jobTable.getColumnModel().getColumn(5).setCellRenderer(new ButtonRenderer("Delete"));
+            jobTable.getColumnModel().getColumn(5).setCellEditor(new ButtonEditor("Delete", jobTable, row -> {
+                System.out.println("Delete clicked for row " + row);
+            }));
+
+            JScrollPane scrollPane = new JScrollPane(jobTable);
+            rightPanel.add(scrollPane, BorderLayout.CENTER);
+        }
 
         rightPanel.revalidate();
         rightPanel.repaint();
     }
+
     // ----------------------------
 
     // Uniform Add Job Posts Screen
@@ -659,7 +621,7 @@ public class RecruiterProfileScreen {
 
                 if (success) {
                     JOptionPane.showMessageDialog(frame, "Job Post Added Successfully!");
-                    showJobPostsScreen(); // refresh the job post list
+                    showJobPostsScreen(); // refresh the job post list and reloads table dynamically
                 } else {
                     JOptionPane.showMessageDialog(frame, "Failed to add job post.", "Error", JOptionPane.ERROR_MESSAGE);
                 }
