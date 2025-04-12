@@ -238,10 +238,10 @@ public class UserProfileScreen extends BaseScreen {
     private JPanel createSearchJobsPanel() {
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBackground(Color.WHITE);
-
+    
         // Title label at the top
         mainPanel.add(createTitleLabel("Search Jobs"), BorderLayout.NORTH);
-
+    
         // Top Search Bar
         JPanel searchBarPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
         searchBarPanel.setBackground(Color.WHITE);
@@ -253,22 +253,21 @@ public class UserProfileScreen extends BaseScreen {
         searchBarPanel.add(searchField);
         searchBarPanel.add(searchButton);
         searchBarPanel.add(filterButton);
-
+    
         // SplitPane divides the job list from job details.
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         splitPane.setDividerLocation(300);
         splitPane.setOneTouchExpandable(true);
-
+    
         // Left Panel: Job Listing
         JPanel leftPanel = new JPanel(new BorderLayout());
         leftPanel.setBackground(Color.WHITE);
-        String[] columnNames = { "Title", "Company", "Location", "Remote", "Date Posted" };
-        Object[][] data = {
-                { "Représentant des services tech", "Castolin Eutectic", "Val-d'Or", "Remote", "1 day ago" },
-                { "General Consideration", "Riva", "Somewhere", "N/A", "2 days ago" },
-                { "Remote Sales and Service Rep", "Company X", "Remote", "Remote", "3 days ago" },
-                { "Executive Assistant", "ABC Corp", "Hybrid", "Partial", "4 days ago" }
-        };
+        String[] columnNames = { "Title", "Company", "Location", "Job Type" };
+        
+        // Fetch job data from database.
+    UserDAO userDAO = new UserDAO();
+    Object[][] data = userDAO.getJobListings();
+
         JTable jobTable = new JTable(data, columnNames);
         jobTable.setRowHeight(30);
         jobTable.setFont(new Font("SansSerif", Font.PLAIN, 14));
@@ -277,19 +276,22 @@ public class UserProfileScreen extends BaseScreen {
         jobTable.setIntercellSpacing(new Dimension(5, 5));
         jobTable.setBackground(Color.WHITE);
         jobTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+        
         JTableHeader header = jobTable.getTableHeader();
         header.setPreferredSize(new Dimension(header.getPreferredSize().width, 35));
         header.setFont(new Font("SansSerif", Font.BOLD, 16));
         header.setBackground(new Color(52, 73, 94));
         header.setForeground(Color.WHITE);
+        
         JScrollPane tableScrollPane = new JScrollPane(jobTable);
         tableScrollPane.getViewport().setBackground(Color.WHITE);
         leftPanel.add(tableScrollPane, BorderLayout.CENTER);
-
+    
         // Right Panel: Job Details
         JPanel rightPanel = new JPanel(new BorderLayout());
         rightPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         rightPanel.setBackground(Color.WHITE);
+
         JLabel jobTitleLabel = new JLabel(
                 "<html><b>Représentant des services techniques / Technical Services Representative Val-d’Or</b></html>");
         jobTitleLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
@@ -298,20 +300,20 @@ public class UserProfileScreen extends BaseScreen {
                 "<html>How your profile and resume fits this job:<br>Get AI-powered advice on how to get started...<br>(Placeholder text)</html>");
         JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
         actionPanel.setBackground(Color.WHITE);
-        JButton easyApplyButton = new JButton("Easy Apply");
-        JButton saveButtonJob = new JButton("Save");
-        JButton shareButton = new JButton("Share");
+        // Only include the Apply button.
+        JButton easyApplyButton = new JButton("Apply here");
         actionPanel.add(easyApplyButton);
-        actionPanel.add(saveButtonJob);
-        actionPanel.add(shareButton);
+        
         JTextArea jobDetailArea = new JTextArea(
                 "Full job description goes here...\n\n1) Key responsibilities\n2) Requirements\n3) Benefits\n...");
         jobDetailArea.setEditable(false);
         jobDetailArea.setLineWrap(true);
         jobDetailArea.setWrapStyleWord(true);
         jobDetailArea.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        
         JScrollPane jobDetailScroll = new JScrollPane(jobDetailArea);
         jobDetailScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        
         JPanel topDetailPanel = new JPanel();
         topDetailPanel.setLayout(new BoxLayout(topDetailPanel, BoxLayout.Y_AXIS));
         topDetailPanel.setBackground(Color.WHITE);
@@ -322,18 +324,22 @@ public class UserProfileScreen extends BaseScreen {
         topDetailPanel.add(jobShortDescLabel);
         topDetailPanel.add(Box.createVerticalStrut(10));
         topDetailPanel.add(actionPanel);
+        
         rightPanel.add(topDetailPanel, BorderLayout.NORTH);
         rightPanel.add(jobDetailScroll, BorderLayout.CENTER);
+        
         splitPane.setLeftComponent(leftPanel);
         splitPane.setRightComponent(rightPanel);
+        
         JPanel centerPanel = new JPanel(new BorderLayout());
         centerPanel.setBackground(Color.WHITE);
         centerPanel.add(searchBarPanel, BorderLayout.NORTH);
         centerPanel.add(splitPane, BorderLayout.CENTER);
+        
         mainPanel.add(centerPanel, BorderLayout.CENTER);
         return mainPanel;
     }
-
+    
     /**
      * Creates the Applications panel with a table.
      */

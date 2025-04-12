@@ -1,10 +1,13 @@
 package com.group04.DAO;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
 
-public class UserDAO {  
+public class UserDAO {
 
     private static final String URL = "jdbc:mysql://localhost:3306/job_portal";
     private static final String USER = "root";
@@ -41,12 +44,12 @@ public class UserDAO {
         }
     }
 
-    // ✅ Login a user
+    
     public boolean loginUser(String email, String password) {
         String query = "SELECT * FROM Users WHERE Email = ? AND Password = ?";
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setString(1, email);
-            stmt.setString(2, password);
+            stmt.setString(2, password); // directly use plain-text
             ResultSet rs = stmt.executeQuery();
             return rs.next(); // Login success if a record is found.
         } catch (SQLException e) {
@@ -54,6 +57,7 @@ public class UserDAO {
             return false;
         }
     }
+    
 
     // ✅ Recover password
     public String recoverPassword(String email, String question, String answer) {
@@ -71,6 +75,107 @@ public class UserDAO {
         }
         return null;
     }
+
+    // Utility to map role String to Role_ID.
+    private int getRoleIdFromRole(String role) {
+        if ("Admin".equalsIgnoreCase(role)) {
+            return 3;
+        } else if ("Recruiter".equalsIgnoreCase(role)) {
+            return 2;
+        } else if ("User".equalsIgnoreCase(role)) {
+            return 1;
+        }
+        return -1;
+    }
+
+    // Helper method: Fetch the actual security question text from the Security_Ques
+    // table.
+    private String getQuestionText(String questionId) {
+        // Use the correct table and column names based on your insert:
+        String query = "SELECT Security_Question FROM `Security_Ques` WHERE Que_ID = ?";
+        try (Connection conn = getConnection();
+                PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, questionId);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getString("Security_Question");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    // Updated method: Get security question for the given email and role.
+    public String getSecurityQuestion(String email, String role) {
+        // Map role string to role ID – make sure this mapping matches your DB inserts:
+        int roleId = getRoleIdFromRole(role);
+        if (roleId == -1) {
+            System.err.println("Invalid role provided: " + role);
+            return null;
+        }
+
+        // Adjust the column name to match exactly as in your Users table.
+        String query = "SELECT `Security_Que` FROM Users WHERE Email = ? AND Role_ID = ?";
+        try (Connection conn = getConnection();
+                PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, email);
+            stmt.setInt(2, roleId);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                // Get the security question ID from Users.
+                String questionId = rs.getString("Security_Que");
+                // Now retrieve the actual question text from Security_Ques table.
+                String questionText = getQuestionText(questionId);
+                return questionText;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    // ✅ Get security answer based on email and role.
+    public String getSecurityAnswer(String email, String role) {
+        int roleId = getRoleIdFromRole(role);
+        if (roleId == -1) {
+            System.err.println("Invalid role provided: " + role);
+            return null;
+        }
+
+        String query = "SELECT Security_Ans FROM Users WHERE Email = ? AND Role_ID = ?";
+        try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, email);
+            stmt.setInt(2, roleId);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getString("Security_Ans");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    // ✅ Update password based on email and role
+    public boolean updatePassword(String email, String password, String role) {
+        int roleId = getRoleIdFromRole(role);
+        if (roleId == -1) {
+            System.err.println("Invalid role provided: " + role);
+            return false;
+        }
+    
+        String query = "UPDATE Users SET Password = ? WHERE Email = ? AND Role_ID = ?";
+        try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, password);
+            stmt.setString(2, email);
+            stmt.setInt(3, roleId);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }    
 
     // ✅ Get role ID by email
     public int getRoleId(String email) {
@@ -91,11 +196,11 @@ public class UserDAO {
     public User getUserProfile(String email) {
         // Updated query to also fetch Resume_default.
         String query = "SELECT u.First_name, u.Last_name, u.Email, u.Mobile, u.Dob, u.Password, u.Role_ID, " +
-                       "u.Security_Que, u.Security_Ans, c.Company_name, u.Job_role, u.Skill_1, u.Skill_2, u.Skill_3, " +
-                       "u.Skill_4, u.LinkedIN_url, u.Availability, u.Resume_default " +
-                       "FROM Users u " +
-                       "LEFT JOIN Company c ON u.Company_ID = c.Company_ID " +
-                       "WHERE u.Email = ?";
+                "u.Security_Que, u.Security_Ans, c.Company_name, u.Job_role, u.Skill_1, u.Skill_2, u.Skill_3, " +
+                "u.Skill_4, u.LinkedIN_url, u.Availability, u.Resume_default " +
+                "FROM Users u " +
+                "LEFT JOIN Company c ON u.Company_ID = c.Company_ID " +
+                "WHERE u.Email = ?";
         User user = null;
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setString(1, email);
@@ -156,8 +261,7 @@ public class UserDAO {
         }
         return user;
     }
-    
-    
+
     public int getCompanyIdByName(String companyName) {
         String query = "SELECT Company_ID FROM Company WHERE Company_name = ?";
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
@@ -170,14 +274,15 @@ public class UserDAO {
             e.printStackTrace();
         }
         return -1; // Return -1 if company not found. You can handle this as an error.
-    }    
+    }
 
     // ✅ Update user profile
     public boolean updateUserProfile(User user) {
         // Updated query to include extra fields.
         String query = "UPDATE Users SET First_name = ?, Last_name = ?, Mobile = ?, Dob = ?, Password = ?, " +
-               "Security_Que = ?, Security_Ans = ?, Company_ID = ?, Job_role = ?, LinkedIN_url = ?, Availability = ? " +
-               "WHERE Email = ?";
+                "Security_Que = ?, Security_Ans = ?, Company_ID = ?, Job_role = ?, LinkedIN_url = ?, Availability = ? "
+                +
+                "WHERE Email = ?";
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setString(1, user.getFirstName());
             stmt.setString(2, user.getLastName());
@@ -187,12 +292,12 @@ public class UserDAO {
             stmt.setString(6, user.getSecurityQuestion());
             stmt.setString(7, user.getSecurityAnswer());
             int companyId = getCompanyIdByName(user.getCompany());
-            if(companyId == -1) {
+            if (companyId == -1) {
                 // Handle error, for example:
                 System.err.println("Company not found for: " + user.getCompany());
                 return false;
             }
-            stmt.setInt(8, companyId);            
+            stmt.setInt(8, companyId);
             stmt.setString(9, user.getJobRole());
             stmt.setString(10, user.getLinkedInUrl());
             stmt.setString(11, user.getAvailability());
@@ -203,6 +308,7 @@ public class UserDAO {
             return false;
         }
     }
+
     /*
      * USER SECTION
      */
@@ -244,8 +350,8 @@ public class UserDAO {
             e.printStackTrace();
             return false;
         }
-    }    
-    
+    }
+
     public byte[] getUserResume(String email) {
         String sql = "SELECT Resume_default FROM Users WHERE Email = ?";
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -260,7 +366,40 @@ public class UserDAO {
             e.printStackTrace();
         }
         return null;
-    }        
+    }
+
+    public Object[][] getJobListings() {
+        // Updated query: Now join with both Job_Type and Company tables.
+        String query = "SELECT ra.Job_Title, c.Company_name AS Company, ra.Job_location, jt.Job_Type AS Job_Type " +
+                       "FROM Recruiters_Applications ra " +
+                       "LEFT JOIN Job_Type jt ON ra.Job_Type = jt.JobType_ID " +
+                       "LEFT JOIN Company c ON ra.Company_ID = c.Company_ID";
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query,
+                 ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+             ResultSet rs = stmt.executeQuery()) {
+    
+            // Move cursor to the last row to determine the row count.
+            rs.last();
+            int rowCount = rs.getRow();
+            rs.beforeFirst();
+    
+            // We now have four columns: Title, Company, Location, and Job Type.
+            Object[][] data = new Object[rowCount][4];
+            int row = 0;
+            while (rs.next()) {
+                data[row][0] = rs.getString("Job_Title");
+                data[row][1] = rs.getString("Company");
+                data[row][2] = rs.getString("Job_location");
+                data[row][3] = rs.getString("Job_Type");
+                row++;
+            }
+            return data;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return new Object[0][0];
+        }
+    }
     
     /*
      * RECRUITER SECTION

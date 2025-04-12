@@ -3,7 +3,7 @@ package com.group04.GUI;
 import javax.swing.*;
 import com.group04.DAO.UserDAO;
 import com.group04.DAO.User;
-import com.group04.GUI.Admin.AdminDashboard;    
+import com.group04.GUI.Admin.AdminDashboard;
 import com.group04.GUI.Recruiter.RecruiterProfileScreen;
 import com.group04.GUI.User.UserProfileScreen;
 
@@ -76,8 +76,8 @@ public class JobPortalApplication {
         tabbedPane.addTab("Contact Us", new JPanel());
 
         tabbedPane.addChangeListener(e -> {
-            if (tabbedPane.getSelectedIndex() == 3) {
-                showContactPopup();
+            if (tabbedPane.getSelectedIndex() == 3) { // index 3 for "Contact Us"
+                showContactPopup(tabbedPane);
             }
         });
 
@@ -123,11 +123,11 @@ public class JobPortalApplication {
         loginButton.addActionListener(e -> {
             String inputEmail = email.getText();
             String inputPassword = new String(password.getPassword());
-            // String hashedPassword = hashPassword(inputPassword);
+            
 
             UserDAO userDAO = new UserDAO();
             boolean loginSuccess = userDAO.loginUser(inputEmail, inputPassword); // Check login credentials
-            // boolean loginSuccess = userDAO.loginUser(inputEmail, hashedPassword); //
+            // boolean loginSuccess = userDAO.loginUser(inputEmail, Password); //
             // Check login credentials
 
             if (loginSuccess) {
@@ -181,7 +181,7 @@ public class JobPortalApplication {
         return panel;
     }
 
-    private void showContactPopup() {
+    private void showContactPopup(JTabbedPane tabbedPane) {
         JFrame contactFrame = new JFrame("Contact Us");
         contactFrame.setSize(400, 200);
         contactFrame.setLocationRelativeTo(null);
@@ -195,15 +195,30 @@ public class JobPortalApplication {
         contactInfo.setMargin(new Insets(20, 20, 20, 20));
 
         contactFrame.add(contactInfo, BorderLayout.CENTER);
+
+        // Add window listener to reset the tab selection when popup is closed.
+        contactFrame.addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowClosed(java.awt.event.WindowEvent e) {
+                // Reset selected tab to the first tab (or any other tab you prefer)
+                tabbedPane.setSelectedIndex(0);
+            }
+
+            public void windowClosing(java.awt.event.WindowEvent e) {
+                // Also handle closing action to reset the tab selection
+                tabbedPane.setSelectedIndex(0);
+            }
+        });
+
         contactFrame.setVisible(true);
     }
 
     private void showForgotPassword(String role) {
-        JFrame forgotFrame = new JFrame(role + " - Forgot Password");
-        forgotFrame.setSize(400, 250);
-        forgotFrame.setLayout(new GridBagLayout());
-        forgotFrame.setLocationRelativeTo(null);
-        forgotFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        // Step 1: Ask for email.
+        JFrame emailFrame = new JFrame(role + " - Forgot Password");
+        emailFrame.setSize(400, 200);
+        emailFrame.setLocationRelativeTo(null);
+        emailFrame.setLayout(new GridBagLayout());
+        emailFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 10, 10, 10);
@@ -212,52 +227,175 @@ public class JobPortalApplication {
         int row = 0;
         gbc.gridx = 0;
         gbc.gridy = row;
-        forgotFrame.add(new JLabel("Email:"), gbc);
+        emailFrame.add(new JLabel("Enter your Email:"), gbc);
+
         gbc.gridx = 1;
         JTextField emailField = new JTextField(20);
-        forgotFrame.add(emailField, gbc);
+        emailFrame.add(emailField, gbc);
 
+        row++;
         gbc.gridx = 0;
-        gbc.gridy = ++row;
-        forgotFrame.add(new JLabel("Security Question:"), gbc);
-        gbc.gridx = 1;
-        JComboBox<String> questionBox = new JComboBox<>(new String[] {
-                "What is your mother's maiden name?",
-                "What was your first pet’s name?",
-                "What is your favorite book?"
-        });
-        forgotFrame.add(questionBox, gbc);
+        gbc.gridy = row;
+        gbc.gridwidth = 2;
+        JButton submitEmailButton = new JButton("Submit");
+        emailFrame.add(submitEmailButton, gbc);
 
-        gbc.gridx = 0;
-        gbc.gridy = ++row;
-        forgotFrame.add(new JLabel("Answer:"), gbc);
-        gbc.gridx = 1;
-        JTextField answerField = new JTextField(20);
-        forgotFrame.add(answerField, gbc);
-
-        JButton submitButton = new JButton("Submit");
-        submitButton.addActionListener(e -> {
-            String email = emailField.getText();
-            String question = (String) questionBox.getSelectedItem();
-            String answer = answerField.getText();
-
+        submitEmailButton.addActionListener(e -> {
+            String email = emailField.getText().trim();
+            if (email.isEmpty()) {
+                JOptionPane.showMessageDialog(emailFrame, "Please enter your email.");
+                return;
+            }
             UserDAO userDAO = new UserDAO();
-            String password = userDAO.recoverPassword(email, question, answer);
-
-            if (password != null) {
-                JOptionPane.showMessageDialog(forgotFrame, "Your password is: " + password);
+            String securityQuestion = userDAO.getSecurityQuestion(email, role);
+            if (securityQuestion != null && !securityQuestion.isEmpty()) {
+                emailFrame.dispose(); // Close the email entry frame.
+                showSecurityAnswerScreen(email, securityQuestion, role);
             } else {
-                JOptionPane.showMessageDialog(forgotFrame, "Invalid email or answer.", "Error",
-                        JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(emailFrame,
+                        "No security question found for the provided email and role.",
+                        "Error", JOptionPane.ERROR_MESSAGE);
             }
         });
-        gbc.gridx = 1;
-        gbc.gridy = ++row;
-        forgotFrame.add(submitButton, gbc);
 
-        forgotFrame.setVisible(true);
+        emailFrame.setVisible(true);
     }
 
+    private void showSecurityAnswerScreen(String email, String securityQuestion, String role) {
+        // Step 2: Display the security question and ask for answer.
+        JFrame answerFrame = new JFrame(role + " - Answer Security Question");
+        answerFrame.setSize(450, 250);
+        answerFrame.setLocationRelativeTo(null);
+        answerFrame.setLayout(new GridBagLayout());
+        answerFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        int row = 0;
+        // Display Email (optional)
+        gbc.gridx = 0;
+        gbc.gridy = row;
+        answerFrame.add(new JLabel("Email:"), gbc);
+
+        gbc.gridx = 1;
+        JTextField emailDisplayField = new JTextField(email, 20);
+        emailDisplayField.setEditable(false);
+        answerFrame.add(emailDisplayField, gbc);
+
+        // Display the security question in a non-editable field.
+        row++;
+        gbc.gridx = 0;
+        gbc.gridy = row;
+        answerFrame.add(new JLabel("Security Question:"), gbc);
+
+        gbc.gridx = 1;
+        JTextField questionField = new JTextField(securityQuestion, 20);
+        questionField.setEditable(false);
+        answerFrame.add(questionField, gbc);
+
+        // Input field for answer.
+        row++;
+        gbc.gridx = 0;
+        gbc.gridy = row;
+        answerFrame.add(new JLabel("Your Answer:"), gbc);
+
+        gbc.gridx = 1;
+        JTextField answerField = new JTextField(20);
+        answerFrame.add(answerField, gbc);
+
+        // Submit Button
+        row++;
+        gbc.gridx = 0;
+        gbc.gridy = row;
+        gbc.gridwidth = 2;
+        JButton submitAnswerButton = new JButton("Submit");
+        answerFrame.add(submitAnswerButton, gbc);
+
+        submitAnswerButton.addActionListener(e -> {
+            String userAnswer = answerField.getText().trim();
+            if (userAnswer.isEmpty()) {
+                JOptionPane.showMessageDialog(answerFrame, "Please provide an answer.");
+                return;
+            }
+            UserDAO userDAO = new UserDAO();
+            String storedAnswer = userDAO.getSecurityAnswer(email, role);
+            if (storedAnswer != null && storedAnswer.equalsIgnoreCase(userAnswer)) {
+                answerFrame.dispose();
+                showChangePasswordScreen(email, role);
+            } else {
+                JOptionPane.showMessageDialog(answerFrame, "Incorrect answer. Please try again.",
+                        "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        answerFrame.setVisible(true);
+    }
+
+    private void showChangePasswordScreen(String email, String role) {
+        // Declare the frame as final so that it can be referenced in the lambda.
+        final JFrame changePwdFrame = new JFrame(role + " - Change Password");
+        changePwdFrame.setSize(400, 250);
+        changePwdFrame.setLocationRelativeTo(null);
+        changePwdFrame.setLayout(new GridBagLayout());
+        changePwdFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+    
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+    
+        int row = 0;
+        gbc.gridx = 0;
+        gbc.gridy = row;
+        changePwdFrame.add(new JLabel("New Password:"), gbc);
+    
+        gbc.gridx = 1;
+        JPasswordField newPasswordField = new JPasswordField(20);
+        changePwdFrame.add(newPasswordField, gbc);
+    
+        row++;
+        gbc.gridx = 0;
+        gbc.gridy = row;
+        changePwdFrame.add(new JLabel("Confirm Password:"), gbc);
+    
+        gbc.gridx = 1;
+        JPasswordField confirmPasswordField = new JPasswordField(20);
+        changePwdFrame.add(confirmPasswordField, gbc);
+    
+        row++;
+        gbc.gridx = 0;
+        gbc.gridy = row;
+        gbc.gridwidth = 2;
+        JButton updatePwdButton = new JButton("Update Password");
+        changePwdFrame.add(updatePwdButton, gbc);
+    
+        updatePwdButton.addActionListener(e -> {
+            String newPwd = new String(newPasswordField.getPassword());
+            String confirmPwd = new String(confirmPasswordField.getPassword());
+            if (newPwd.isEmpty() || confirmPwd.isEmpty()) {
+                JOptionPane.showMessageDialog(changePwdFrame, "Please fill in both fields.",
+                        "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            if (!newPwd.equals(confirmPwd)) {
+                JOptionPane.showMessageDialog(changePwdFrame, "Passwords do not match.",
+                        "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            UserDAO userDAO = new UserDAO();
+            if (userDAO.updatePassword(email, newPwd, role)) {
+                JOptionPane.showMessageDialog(changePwdFrame, "Password updated successfully!");
+                changePwdFrame.dispose();
+            } else {
+                JOptionPane.showMessageDialog(changePwdFrame, "Failed to update password. Please try again later.",
+                        "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+    
+        changePwdFrame.setVisible(true);
+    }
+    
     private void showRegistration(String role) {
         JFrame regFrame = new JFrame(role + " Registration");
         regFrame.setSize(500, 500);
@@ -311,20 +449,21 @@ public class JobPortalApplication {
         gbc.gridx = 1;
         JPasswordField txtPassword = new JPasswordField(20);
         regFrame.add(txtPassword, gbc);
-
         JButton regButton = new JButton("Register");
         regButton.addActionListener(e -> {
-            String hashedPassword = hashPassword(new String(txtPassword.getPassword()));
-
+            // Get the plain text password directly.
+            String password = new String(txtPassword.getPassword());
+            
+            // Create the user object using the plain text password.
             User user = new User(txtFirstName.getText(), txtLastName.getText(), txtEmail.getText(),
-                    txtMobile.getText(), txtDob.getText(), hashedPassword);
-
+                    txtMobile.getText(), txtDob.getText(), password);
+            
             UserDAO userDAO = new UserDAO();
             if (userDAO.registerUser(user)) {
-                JOptionPane.showMessageDialog(regFrame, "Registration Successful!");
-                regFrame.dispose();
+                JOptionPane.showMessageDialog(null, "Registration Successful!");
+                // Optionally dispose the registration form, if applicable.
             } else {
-                JOptionPane.showMessageDialog(regFrame, "Registration Failed. Try again later.");
+                JOptionPane.showMessageDialog(null, "Registration Failed. Try again later.");
             }
         });
 
@@ -333,20 +472,5 @@ public class JobPortalApplication {
         regFrame.add(regButton, gbc);
 
         regFrame.setVisible(true);
-    }
-
-    private String hashPassword(String password) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] encodedhash = digest.digest(password.getBytes(StandardCharsets.UTF_8));
-            StringBuilder hexString = new StringBuilder();
-            for (byte b : encodedhash) {
-                hexString.append(String.format("%02x", b));
-            }
-            return hexString.toString();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-            return null;
-        }
     }
 }

@@ -1,9 +1,9 @@
 use Job_Portal;
 
 INSERT INTO User_Roles (Role_ID, Role_type) VALUES
-(1, 'Admin'),
+(3, 'Admin'),
 (2, 'Recruiter'),
-(3, 'User');
+(1, 'User');
 
 INSERT INTO Security_Ques (Que_ID, Security_Question) VALUES
 (1, 'What is your pet’s name?'),
@@ -47,10 +47,10 @@ INSERT INTO Users (
     Profile_pic, Resume_default, Availability
 )
 VALUES
-('Poojan', 'Gandhi', 'Pg991@example.com', '1234567890', '1990-05-01', 'pass1234', 1, 'Fluffy', 1, 1001, 'Developer', 'Java', 'SQL', 'HTML', 'CSS', 'EC', '4 years', 'bachelor''s''Degree','3 years','https://linkedin.com/in/johndoe', NULL, NULL, 'Part - Time'),
+('Poojan', 'Gandhi', 'Pg991@example.com', '1234567890', '1990-05-01', 'pass1234', 1, 'Fluffy', 3, 1001, 'Developer', 'Java', 'SQL', 'HTML', 'CSS', 'EC', '4 years', 'bachelor''s''Degree','3 years','https://linkedin.com/in/johndoe', NULL, NULL, 'Part - Time'),
 ('Janaki', 'Katharotiya', 'JK787@example.com', '2345678901', '1992-03-15', 'alice@321', 2, 'Blue', 2, 1002, 'Manager', 'Leadership', 'Planning', 'Scrum', 'Communication', 'BCA', '3 years', 'bachelor''s''Degree','2 years', 'https://linkedin.com/in/alicesmith', NULL, NULL, 'Full Time'),
 ('habeeb', 'Adesina', 'bee754@example.com', '3456789012', '1985-11-22', 'bob!pass', 3, 'Pizza', 3, 1003, 'Data Engineer', 'Python', 'SQL', 'ETL', 'Airflow', 'BSC IT', '4 years', 'Certificate','1 years', 'https://linkedin.com/in/bobtaylor', NULL, NULL, 'Part - Time'),
-('Suryadarshini', 'Ganeshamoorthy', 'Sg111@example.com', '4567890123', '1998-07-30', 'carolpass', 4, 'Fries', 3, 1004, 'DevOps Engineer', 'Docker', 'Kubernetes', 'AWS', 'Terraform', 'MCA', '2 years', 'Master''s''Degree','4 years','https://linkedin.com/in/caroljones', NULL, NULL, 'Full Time'),
+('Suryadarshini', 'Ganeshamoorthy', 'Sg111@example.com', '4567890123', '1998-07-30', 'carolpass', 4, 'Fries', 1, 1004, 'DevOps Engineer', 'Docker', 'Kubernetes', 'AWS', 'Terraform', 'MCA', '2 years', 'Master''s''Degree','4 years','https://linkedin.com/in/caroljones', NULL, NULL, 'Full Time'),
 ('Sudharshan', 'Murali', 'SM456@example.com', '5678901234', '1995-09-10', 'dav!234', 5, 'Batman', 2, 1005, 'Frontend Dev', 'React', 'JS', 'CSS', 'Figma', 'Computer Science', '4 years', 'Diploma','3 years','https://linkedin.com/in/davidwhite', NULL, NULL, 'Full Time'),
 ('Krishna', 'Patel', 'KP191@example.com', '6789012345', '1993-02-28', 'ell@pass', 2, 'Rome', 3, 1006, 'Security Analyst', 'Networking', 'Ethical Hacking', 'Linux', 'SIEM', 'Technology Management', '1 years', 'bachelor''s''Degree','2 years','https://linkedin.com/in/ellabrown', NULL, NULL, 'Full Time'),
 ('Urvashee', 'Brambhatt', 'UB222@example.com', '7890123456', '1991-08-12', 'frank123', 3, 'Gray', 2, 1007, 'ML Engineer', 'Python', 'TensorFlow', 'Data Analysis', 'Pandas', 'Data Analysts', '4 years', 'Master''s''Degree','3 years','https://linkedin.com/in/frankwilson', NULL, NULL, 'Part - Time'),
@@ -86,3 +86,4 @@ INSERT INTO Applications_User (Job_Title, Application_Date, User_ID, Company_ID,
 ('Blockchain Developer', '2025-02-08', 8, 1008, 5),
 ('Game Designer', '2025-02-09', 9, 1009, 2),
 ('Product Manager', '2025-02-10', 10, 1010, 1); 
+
