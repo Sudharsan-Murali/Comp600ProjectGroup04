@@ -14,19 +14,13 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-
-import java.awt.Component;
 import java.awt.event.ActionListener;
-import javax.swing.JButton;
-import javax.swing.JTable;
 
 import com.group04.DAO.User;
 import com.group04.DAO.UserDAO;
 import com.group04.GUI.Components.BaseScreen;
 import com.group04.GUI.Components.ButtonFactory;
 import com.group04.GUI.Components.ButtonColumn;
-
-
 
 public class UserProfileScreen extends BaseScreen {
 
@@ -187,7 +181,6 @@ public class UserProfileScreen extends BaseScreen {
         container.add(rightPanel, BorderLayout.CENTER);
     }
 
-    
     /**
      * Switches the visible card based on card name.
      */
@@ -247,10 +240,10 @@ public class UserProfileScreen extends BaseScreen {
     private JPanel createSearchJobsPanel() {
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBackground(Color.WHITE);
-    
+
         // Title label at the top
         mainPanel.add(createTitleLabel("Search Jobs"), BorderLayout.NORTH);
-    
+
         // Top Search Bar: Only contains Filter and Reset Filter buttons.
         JPanel searchBarPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
         searchBarPanel.setBackground(Color.WHITE);
@@ -258,27 +251,27 @@ public class UserProfileScreen extends BaseScreen {
         JButton resetFilterButton = new JButton("Reset Filter");
         searchBarPanel.add(filterButton);
         searchBarPanel.add(resetFilterButton);
-    
+
         // SplitPane divides the job list from job details.
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         splitPane.setDividerLocation(300);
         splitPane.setOneTouchExpandable(true);
-    
+
         // LEFT PANEL: Job Listing
         JPanel leftPanel = new JPanel(new BorderLayout());
         leftPanel.setBackground(Color.WHITE);
-    
+
         // Define the table columns.
         final String[] columnNames = { "Title", "Company", "Location", "Job Type" };
-    
+
         // Setup pagination variables.
-        final int pageSize = 10;        // Number of records per page.
-        final int[] currentPage = { 1 };  // Mutable current page stored in an array
-    
+        final int pageSize = 10; // Number of records per page.
+        final int[] currentPage = { 1 }; // Mutable current page stored in an array
+
         UserDAO userDAO = new UserDAO();
         // Initially load page 1
         Object[][] data = userDAO.getJobListings(currentPage[0], pageSize);
-        
+
         // Create table with non-editable model.
         final JTable jobTable = new JTable(new DefaultTableModel(data, columnNames) {
             @Override
@@ -293,17 +286,17 @@ public class UserProfileScreen extends BaseScreen {
         jobTable.setIntercellSpacing(new Dimension(5, 5));
         jobTable.setBackground(Color.WHITE);
         jobTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-        
+
         JTableHeader header = jobTable.getTableHeader();
         header.setPreferredSize(new Dimension(header.getPreferredSize().width, 35));
         header.setFont(new Font("SansSerif", Font.BOLD, 16));
         header.setBackground(new Color(52, 73, 94));
         header.setForeground(Color.WHITE);
-        
+
         JScrollPane tableScrollPane = new JScrollPane(jobTable);
         tableScrollPane.getViewport().setBackground(Color.WHITE);
         leftPanel.add(tableScrollPane, BorderLayout.CENTER);
-        
+
         // Pagination Panel at the bottom of leftPanel.
         JPanel paginationPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         paginationPanel.setBackground(Color.WHITE);
@@ -314,7 +307,7 @@ public class UserProfileScreen extends BaseScreen {
         paginationPanel.add(pageLabel);
         paginationPanel.add(nextButton);
         leftPanel.add(paginationPanel, BorderLayout.SOUTH);
-        
+
         // Prev button action.
         prevButton.addActionListener(e -> {
             if (currentPage[0] > 1) {
@@ -329,7 +322,7 @@ public class UserProfileScreen extends BaseScreen {
                 pageLabel.setText("Page " + currentPage[0]);
             }
         });
-        
+
         // Next button action.
         nextButton.addActionListener(e -> {
             Object[][] newData = userDAO.getJobListings(currentPage[0] + 1, pageSize);
@@ -344,20 +337,20 @@ public class UserProfileScreen extends BaseScreen {
                 pageLabel.setText("Page " + currentPage[0]);
             }
         });
-        
+
         // RIGHT PANEL: Job Details
         final JPanel detailPanel = new JPanel();
         detailPanel.setLayout(new BoxLayout(detailPanel, BoxLayout.Y_AXIS));
         detailPanel.setBackground(Color.WHITE);
         detailPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-    
+
         final JLabel jobTitleLabel = new JLabel();
         jobTitleLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
         final JLabel companyLabel = new JLabel();
         final JLabel locationLabel = new JLabel();
         final JLabel jobTypeLabel = new JLabel();
-        final JLabel dateLabel = new JLabel();         // For Date of Application
-        final JLabel dueDateLabel = new JLabel();        // For Due Date (if available)
+        final JLabel dateLabel = new JLabel(); // For Date of Application
+        final JLabel dueDateLabel = new JLabel(); // For Due Date (if available)
         final JTextArea jobDescArea = new JTextArea();
         jobDescArea.setEditable(false);
         jobDescArea.setLineWrap(true);
@@ -365,11 +358,11 @@ public class UserProfileScreen extends BaseScreen {
         jobDescArea.setFont(new Font("SansSerif", Font.PLAIN, 14));
         JScrollPane descScroll = new JScrollPane(jobDescArea);
         descScroll.setPreferredSize(new Dimension(300, 150));
-    
+
         // Create an "Apply here" button.
         final JButton applyButton = new JButton("Apply here");
         applyButton.setEnabled(false);
-    
+
         detailPanel.add(jobTitleLabel);
         detailPanel.add(Box.createVerticalStrut(5));
         detailPanel.add(companyLabel);
@@ -386,11 +379,11 @@ public class UserProfileScreen extends BaseScreen {
         detailPanel.add(descScroll);
         detailPanel.add(Box.createVerticalStrut(10));
         detailPanel.add(applyButton);
-    
+
         JPanel rightWrapperPanel = new JPanel(new BorderLayout());
         rightWrapperPanel.setBackground(Color.WHITE);
         rightWrapperPanel.add(detailPanel, BorderLayout.CENTER);
-        
+
         // Update detail panel when a row is selected.
         jobTable.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
@@ -404,13 +397,15 @@ public class UserProfileScreen extends BaseScreen {
                         locationLabel.setText("Location: " + details.get("Job_location"));
                         jobTypeLabel.setText("Job Type: " + details.get("Job_Type"));
                         dateLabel.setText("Date of Application: " + details.get("Date_Of_Application"));
-                        dueDateLabel.setText("Due Date: " + (details.get("Due_Date") != null ? details.get("Due_Date") : "N/A"));
-                        
+
                         StringBuilder desc = new StringBuilder();
-                        desc.append(details.get("Job_Description") != null ? details.get("Job_Description") : "No Description Provided");
-                        desc.append("\n\nRequired Experience: " + (details.get("Required_Experience") != null ? details.get("Required_Experience") : "Not Specified"));
+                        desc.append(details.get("Job_Description") != null ? details.get("Job_Description")
+                                : "No Description Provided");
+                        desc.append("\n\nRequired Experience: "
+                                + (details.get("Required_Experience") != null ? details.get("Required_Experience")
+                                        : "Not Specified"));
                         jobDescArea.setText(desc.toString());
-                        
+
                         applyButton.setEnabled(true);
                         applyButton.putClientProperty("jobTitle", details.get("Job_Title"));
                     } else {
@@ -426,32 +421,34 @@ public class UserProfileScreen extends BaseScreen {
                 }
             }
         });
-        
+
         // Apply button functionality.
         applyButton.addActionListener(e -> {
             String jobTitle = (String) applyButton.getClientProperty("jobTitle");
             if (jobTitle != null && !jobTitle.isEmpty()) {
                 boolean applied = userDAO.applyForJob(jobTitle, loggedInEmail);
                 if (applied) {
-                    JOptionPane.showMessageDialog(mainPanel, "You have successfully applied for the job!", "Application Submitted", JOptionPane.INFORMATION_MESSAGE);
+                    JOptionPane.showMessageDialog(mainPanel, "You have successfully applied for the job!",
+                            "Application Submitted", JOptionPane.INFORMATION_MESSAGE);
                 } else {
-                    JOptionPane.showMessageDialog(mainPanel, "Failed to apply for the job. Please try again later.", "Application Failed", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(mainPanel, "Failed to apply for the job. Please try again later.",
+                            "Application Failed", JOptionPane.ERROR_MESSAGE);
                 }
             } else {
                 JOptionPane.showMessageDialog(mainPanel, "No job selected.", "Error", JOptionPane.ERROR_MESSAGE);
             }
         });
-        
+
         splitPane.setLeftComponent(leftPanel);
         splitPane.setRightComponent(rightWrapperPanel);
-    
+
         JPanel centerPanel = new JPanel(new BorderLayout());
         centerPanel.setBackground(Color.WHITE);
         centerPanel.add(searchBarPanel, BorderLayout.NORTH);
         centerPanel.add(splitPane, BorderLayout.CENTER);
-        
+
         mainPanel.add(centerPanel, BorderLayout.CENTER);
-    
+
         // Filter button functionality: Open filter dialog and update table data.
         filterButton.addActionListener(e -> {
             JPanel filterPanel = new JPanel(new GridLayout(4, 2, 10, 10));
@@ -459,7 +456,7 @@ public class UserProfileScreen extends BaseScreen {
             JTextField companyField = new JTextField();
             JTextField locationField = new JTextField();
             JTextField jobTypeField = new JTextField();
-            
+
             filterPanel.add(new JLabel("Job Title:"));
             filterPanel.add(titleField);
             filterPanel.add(new JLabel("Company Name:"));
@@ -468,15 +465,17 @@ public class UserProfileScreen extends BaseScreen {
             filterPanel.add(locationField);
             filterPanel.add(new JLabel("Job Type:"));
             filterPanel.add(jobTypeField);
-            
-            int result = JOptionPane.showConfirmDialog(mainPanel, filterPanel, "Filter Jobs", JOptionPane.OK_CANCEL_OPTION);
+
+            int result = JOptionPane.showConfirmDialog(mainPanel, filterPanel, "Filter Jobs",
+                    JOptionPane.OK_CANCEL_OPTION);
             if (result == JOptionPane.OK_OPTION) {
                 String filterTitle = titleField.getText().trim();
                 String filterCompany = companyField.getText().trim();
                 String filterLocation = locationField.getText().trim();
                 String filterJobType = jobTypeField.getText().trim();
-                
-                Object[][] filteredData = userDAO.getFilteredJobListings(filterTitle, filterCompany, filterLocation, filterJobType);
+
+                Object[][] filteredData = userDAO.getFilteredJobListings(filterTitle, filterCompany, filterLocation,
+                        filterJobType);
                 jobTable.setModel(new DefaultTableModel(filteredData, columnNames) {
                     @Override
                     public boolean isCellEditable(int row, int column) {
@@ -488,7 +487,7 @@ public class UserProfileScreen extends BaseScreen {
                 pageLabel.setText("Page " + currentPage[0]);
             }
         });
-        
+
         // Reset Filter button functionality: Reload the current page data.
         resetFilterButton.addActionListener(e -> {
             Object[][] allData = userDAO.getJobListings(currentPage[0], pageSize);
@@ -499,11 +498,10 @@ public class UserProfileScreen extends BaseScreen {
                 }
             });
         });
-    
+
         return mainPanel;
-    }    
-        
-    
+    }
+
     /**
      * Creates the Applications panel with a table.
      */
@@ -511,14 +509,15 @@ public class UserProfileScreen extends BaseScreen {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
         panel.add(createTitleLabel("Applications"), BorderLayout.NORTH);
-    
-        // Define columns matching your UI: APP NO, JOB TITLE, APPLICATION DATE, STATUS, VIEW.
+
+        // Define columns matching your UI: APP NO, JOB TITLE, APPLICATION DATE, STATUS,
+        // VIEW.
         String[] columnNames = { "APP NO", "JOB TITLE", "APPLICATION DATE", "STATUS", "VIEW" };
-    
+
         // Retrieve user applications from the DAO.
         UserDAO userDAO = new UserDAO();
-        Object[][] data = userDAO.getUserApplications(loggedInEmail); 
-    
+        Object[][] data = userDAO.getUserApplications(loggedInEmail);
+
         // Add a "View" column to the data.
         Object[][] finalData = new Object[data.length][5];
         for (int i = 0; i < data.length; i++) {
@@ -526,17 +525,17 @@ public class UserProfileScreen extends BaseScreen {
             finalData[i][1] = data[i][1]; // Job Title
             finalData[i][2] = data[i][2]; // Application Date
             finalData[i][3] = data[i][3]; // Status
-            finalData[i][4] = "View";     // Button text for view action
+            finalData[i][4] = "View"; // Button text for view action
         }
-    
+
         DefaultTableModel model = new DefaultTableModel(finalData, columnNames) {
             @Override
             public boolean isCellEditable(int row, int col) {
                 // Only the VIEW column is marked as editable (for our custom button)
-                return col == 4; 
+                return col == 4;
             }
         };
-    
+
         final JTable appTable = new JTable(model);
         appTable.setRowHeight(30);
         appTable.setFont(new Font("SansSerif", Font.PLAIN, 14));
@@ -545,17 +544,17 @@ public class UserProfileScreen extends BaseScreen {
         appTable.setIntercellSpacing(new Dimension(5, 5));
         appTable.setBackground(Color.WHITE);
         appTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-    
+
         JTableHeader header = appTable.getTableHeader();
         header.setPreferredSize(new Dimension(header.getPreferredSize().width, 35));
         header.setFont(new Font("SansSerif", Font.BOLD, 16));
         header.setBackground(new Color(52, 73, 94));
         header.setForeground(Color.WHITE);
-    
+
         JScrollPane scrollPane = new JScrollPane(appTable);
         scrollPane.getViewport().setBackground(Color.WHITE);
         panel.add(scrollPane, BorderLayout.CENTER);
-    
+
         // Create a custom button column for "VIEW" using the ButtonColumn helper.
         new ButtonColumn(appTable, new ActionListener() {
             @Override
@@ -569,7 +568,8 @@ public class UserProfileScreen extends BaseScreen {
                     if (option == JOptionPane.YES_OPTION) {
                         boolean withdrawn = userDAO.withdrawApplication(appId, loggedInEmail);
                         if (withdrawn) {
-                            JOptionPane.showMessageDialog(panel, "Application withdrawn successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+                            JOptionPane.showMessageDialog(panel, "Application withdrawn successfully.", "Success",
+                                    JOptionPane.INFORMATION_MESSAGE);
                             // Refresh the table data
                             Object[][] updatedData = userDAO.getUserApplications(loggedInEmail);
                             Object[][] newFinalData = new Object[updatedData.length][5];
@@ -587,24 +587,23 @@ public class UserProfileScreen extends BaseScreen {
                                 }
                             });
                         } else {
-                            JOptionPane.showMessageDialog(panel, "Failed to withdraw the application.", "Error", JOptionPane.ERROR_MESSAGE);
+                            JOptionPane.showMessageDialog(panel, "Failed to withdraw the application.", "Error",
+                                    JOptionPane.ERROR_MESSAGE);
                         }
                     }
                 }
             }
-        }, 4);  // Column index 4 for the "VIEW" column
-    
+        }, 4); // Column index 4 for the "VIEW" column
+
         // Optionally, add pagination or additional UI elements at the bottom.
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         bottomPanel.setBackground(Color.WHITE);
         JLabel pageLabel = new JLabel("Page 1"); // Example pagination label
         bottomPanel.add(pageLabel);
         panel.add(bottomPanel, BorderLayout.SOUTH);
-    
+
         return panel;
     }
-    
-    
 
     /**
      * Creates the Profile Picture section.
@@ -895,9 +894,6 @@ public class UserProfileScreen extends BaseScreen {
         profilePicLabel.setText("Add Profile Picture");
         removeButton.setVisible(false);
     }
-
-   
-    
 
     // Handles navigation events.
     protected void handleNavigation(ActionEvent e) {

@@ -137,7 +137,7 @@ public class JobPortalApplication {
                 // Check if the role matches the selected tab
                 if ((role.equals("User") && roleId == 1) ||
                         (role.equals("Recruiter") && roleId == 2) ||
-                        (role.equals("Admin") && roleId == 3)) {
+                        (role.equals("Admin") && roleId == 1)) {
 
                     // Navigate to the appropriate screen based on the roleId
                     switch (roleId) {
