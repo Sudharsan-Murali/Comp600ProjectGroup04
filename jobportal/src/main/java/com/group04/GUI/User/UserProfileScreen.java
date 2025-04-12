@@ -55,6 +55,13 @@ public class UserProfileScreen extends BaseScreen {
         txtLinkedIn = new JTextField(25);
         txtAvailability = new JTextField(25);
 
+        // Make non-editable fields.
+        txtFirstName.setEditable(false);
+        txtLastName.setEditable(false);
+        txtEmail.setEditable(false);
+        txtPhone.setEditable(false);
+        txtPreferences.setEditable(false);
+
         // Initialize resume status label (for clickable file name).
         resumeStatusLabel = new JLabel("<html><u>No file selected</u></html>");
         resumeStatusLabel.setForeground(Color.BLUE);
