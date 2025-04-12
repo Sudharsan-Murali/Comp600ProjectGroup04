@@ -48,8 +48,8 @@ import java.sql.Statement;
         // runSQLFile("jobportal\\src\\Resources\\sqlFiles\\Users.sql");
         // runSQLFile("jobportal\\src\\Resources\\sqlFiles\\Application_Status.sql");
         // runSQLFile("jobportal\\src\\Resources\\sqlFiles\\Applications_User.sql");
-        // runSQLFile("jobportal\\src\\Resources\\sqlFiles\\Recruiters_Applications.sql");
-        runSQLFile("jobportal\\src\\Resources\\sqlFiles\\Insertdataindb.sql");
+        runSQLFile("jobportal\\src\\Resources\\sqlFiles\\Recruiters_Applications.sql");
+        //runSQLFile("jobportal\\src\\Resources\\sqlFiles\\Insertdataindb.sql");
         
         //runSQLFile("jobportal\\Resources\\deletedb.sql");
     }
