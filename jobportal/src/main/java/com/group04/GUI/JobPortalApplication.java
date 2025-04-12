@@ -5,11 +5,9 @@ import com.group04.DAO.UserDAO;
 import com.group04.DAO.User;
 import com.group04.GUI.Admin.AdminDashboard;
 import com.group04.GUI.Recruiter.RecruiterProfileScreen;
-import com.group04.GUI.User.UserMerged;
 import com.group04.GUI.User.UserProfileScreen;
 
 import java.awt.*;
-import java.awt.event.*;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
