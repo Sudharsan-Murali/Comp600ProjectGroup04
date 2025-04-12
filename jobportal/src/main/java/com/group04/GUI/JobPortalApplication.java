@@ -3,13 +3,11 @@ package com.group04.GUI;
 import javax.swing.*;
 import com.group04.DAO.UserDAO;
 import com.group04.DAO.User;
-import com.group04.GUI.Admin.AdminDashboard;
+import com.group04.GUI.Admin.AdminDashboard;    
 import com.group04.GUI.Recruiter.RecruiterProfileScreen;
-import com.group04.GUI.User.UserMerged;
 import com.group04.GUI.User.UserProfileScreen;
 
 import java.awt.*;
-import java.awt.event.*;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -148,7 +146,7 @@ public class JobPortalApplication {
                             break;
 
                         case 2: // Recruiter role
-                            new RecruiterProfileScreen().createAndShowGUI();
+                            new RecruiterProfileScreen(inputEmail).createAndShowGUI();
                             break;
                         case 3: // Admin role
                             new AdminDashboard().createAndShowGUI();

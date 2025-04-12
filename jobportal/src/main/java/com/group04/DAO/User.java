@@ -19,6 +19,8 @@ public class User {
     private String linkedInUrl;
     private String availability;
 
+    private byte[] resume;
+
     // Constructors
     public User() {}
 
@@ -112,4 +114,7 @@ public class User {
 
     public String getAvailability() { return availability; }
     public void setAvailability(String availability) { this.availability = availability; }
+
+    public byte[] getResume() { return resume; }
+    public void setResume(byte[] resume) { this.resume = resume; }
 }

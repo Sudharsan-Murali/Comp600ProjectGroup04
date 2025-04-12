@@ -3,10 +3,12 @@ package com.group04.GUI.User;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.JTableHeader;
-import javax.swing.table.TableColumnModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -34,13 +36,15 @@ public class UserProfileScreen extends BaseScreen {
     private JTextField txtPreferences;
     private JTextField txtLinkedIn;
     private JTextField txtAvailability;
-
-    private File resumeFile; // This will hold the selected resume file.
+    private JLabel resumeStatusLabel; // To display resume upload status
+    private JLabel resumeFileNameLabel;
+    private File resumeFile; // Holds the selected resume file.
 
     public UserProfileScreen(String userEmail) {
         super("User Profile");
-        this.loggedInEmail = userEmail;  // now the email is stored
-        // TODO Auto-generated constructor stub
+        this.loggedInEmail = userEmail; // now the email is stored
+
+        // Initialize text fields.
         txtFirstName = new JTextField(25);
         txtLastName = new JTextField(25);
         txtEmail = new JTextField(25);
@@ -51,9 +55,22 @@ public class UserProfileScreen extends BaseScreen {
         txtLinkedIn = new JTextField(25);
         txtAvailability = new JTextField(25);
 
-        // Now build the UI.
+        // Make non-editable fields.
+        txtFirstName.setEditable(false);
+        txtLastName.setEditable(false);
+        txtEmail.setEditable(false);
+        txtPhone.setEditable(false);
+        txtPreferences.setEditable(false);
+
+        // Initialize resume status label (for clickable file name).
+        resumeStatusLabel = new JLabel("<html><u>No file selected</u></html>");
+        resumeStatusLabel.setForeground(Color.BLUE);
+        resumeStatusLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        // Build the UI.
         initializeUIWithCards();
-        // Other UI settings
+
+        // Other UI settings.
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         setSize(screenSize);
@@ -65,13 +82,14 @@ public class UserProfileScreen extends BaseScreen {
         setVisible(true);
     }
 
+    // Stub for getUserProfile; ideally, profile data is fetched via the DAO.
+    // (This method is used only in the UI if needed.)
     public User getUserProfile(String email) {
+        // You might not be using this method since your DAO already provides one.
         String query = "SELECT first_name, last_name, email, mobile, dob, role_id, security_que, security_ans, company, job_role, preferences, linkedin_url, availability FROM users WHERE email = ?";
         User user = null;
-
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setString(1, email);
-
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
                 user = new User();
@@ -83,11 +101,10 @@ public class UserProfileScreen extends BaseScreen {
                 user.setRole(rs.getInt("role_id"));
                 user.setSecurityQuestion(rs.getString("security_que"));
                 user.setSecurityAnswer(rs.getString("security_ans"));
-                // New additional fields:
                 user.setCompany(rs.getString("company"));
                 user.setJobRole(rs.getString("job_role"));
                 user.setPreferences(rs.getString("preferences"));
-                user.setLinkedInUrl(rs.getString("linkedin_url")); // Ensure your setter is named accordingly.
+                user.setLinkedInUrl(rs.getString("linkedin_url"));
                 user.setAvailability(rs.getString("availability"));
             } else {
                 System.out.println("No user found with email: " + email);
@@ -96,12 +113,12 @@ public class UserProfileScreen extends BaseScreen {
             e.printStackTrace();
             System.out.println("Error while fetching user profile.");
         }
-
         return user;
     }
 
+    // Placeholder for getConnection() - make sure to implement or remove if using
+    // DAO exclusively.
     private Connection getConnection() {
-        // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'getConnection'");
     }
 
@@ -205,7 +222,7 @@ public class UserProfileScreen extends BaseScreen {
         savePanel.setOpaque(false);
         JButton saveButton = new JButton("SAVE");
         saveButton.setPreferredSize(new Dimension(100, 30));
-        // You can add an ActionListener to saveButton if needed.
+        saveButton.addActionListener(e -> saveProfileData());
         savePanel.add(saveButton);
 
         contentPanel.add(Box.createVerticalStrut(10));
@@ -218,10 +235,6 @@ public class UserProfileScreen extends BaseScreen {
     /**
      * Creates the Search Jobs panel with a table.
      */
-    /**
-     * Creates an updated Search Jobs panel, inspired by LinkedIn’s style,
-     * with a search bar, job listing on the left, and job details on the right.
-     */
     private JPanel createSearchJobsPanel() {
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBackground(Color.WHITE);
@@ -229,40 +242,33 @@ public class UserProfileScreen extends BaseScreen {
         // Title label at the top
         mainPanel.add(createTitleLabel("Search Jobs"), BorderLayout.NORTH);
 
-        // 1) Top Search Bar
+        // Top Search Bar
         JPanel searchBarPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
         searchBarPanel.setBackground(Color.WHITE);
-
         JLabel searchLabel = new JLabel("Search:");
         JTextField searchField = new JTextField(20);
         JButton searchButton = new JButton("Search");
-        // Optional advanced filter button(s):
         JButton filterButton = new JButton("Filter");
-
         searchBarPanel.add(searchLabel);
         searchBarPanel.add(searchField);
         searchBarPanel.add(searchButton);
         searchBarPanel.add(filterButton);
 
-        // 2) SplitPane divides the left job list from the right job detail
+        // SplitPane divides the job list from job details.
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        splitPane.setDividerLocation(300); // Initial divider position
+        splitPane.setDividerLocation(300);
         splitPane.setOneTouchExpandable(true);
 
-        // 2a) Left Panel: Job Listing
+        // Left Panel: Job Listing
         JPanel leftPanel = new JPanel(new BorderLayout());
         leftPanel.setBackground(Color.WHITE);
-
-        // Create a placeholder table or list for job listings
         String[] columnNames = { "Title", "Company", "Location", "Remote", "Date Posted" };
         Object[][] data = {
                 { "Représentant des services tech", "Castolin Eutectic", "Val-d'Or", "Remote", "1 day ago" },
                 { "General Consideration", "Riva", "Somewhere", "N/A", "2 days ago" },
                 { "Remote Sales and Service Rep", "Company X", "Remote", "Remote", "3 days ago" },
-                { "Executive Assistant", "ABC Corp", "Hybrid", "Partial", "4 days ago" },
-                // ... add more placeholder rows as needed
+                { "Executive Assistant", "ABC Corp", "Hybrid", "Partial", "4 days ago" }
         };
-
         JTable jobTable = new JTable(data, columnNames);
         jobTable.setRowHeight(30);
         jobTable.setFont(new Font("SansSerif", Font.PLAIN, 14));
@@ -271,59 +277,41 @@ public class UserProfileScreen extends BaseScreen {
         jobTable.setIntercellSpacing(new Dimension(5, 5));
         jobTable.setBackground(Color.WHITE);
         jobTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-
-        // Table header styling
         JTableHeader header = jobTable.getTableHeader();
         header.setPreferredSize(new Dimension(header.getPreferredSize().width, 35));
         header.setFont(new Font("SansSerif", Font.BOLD, 16));
         header.setBackground(new Color(52, 73, 94));
         header.setForeground(Color.WHITE);
-
         JScrollPane tableScrollPane = new JScrollPane(jobTable);
         tableScrollPane.getViewport().setBackground(Color.WHITE);
-
         leftPanel.add(tableScrollPane, BorderLayout.CENTER);
 
-        // 2b) Right Panel: Job Details
+        // Right Panel: Job Details
         JPanel rightPanel = new JPanel(new BorderLayout());
         rightPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         rightPanel.setBackground(Color.WHITE);
-
-        // Placeholder job detail
         JLabel jobTitleLabel = new JLabel(
                 "<html><b>Représentant des services techniques / Technical Services Representative Val-d’Or</b></html>");
         jobTitleLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
-
         JLabel jobLocationLabel = new JLabel("Val-d'Or, QC   |   Remote   |   29 applicants");
         JLabel jobShortDescLabel = new JLabel(
                 "<html>How your profile and resume fits this job:<br>Get AI-powered advice on how to get started...<br>(Placeholder text)</html>");
-        // Buttons for Easy Apply, Save, etc.
         JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
         actionPanel.setBackground(Color.WHITE);
         JButton easyApplyButton = new JButton("Easy Apply");
-        JButton saveButton = new JButton("Save");
+        JButton saveButtonJob = new JButton("Save");
         JButton shareButton = new JButton("Share");
-
         actionPanel.add(easyApplyButton);
-        actionPanel.add(saveButton);
+        actionPanel.add(saveButtonJob);
         actionPanel.add(shareButton);
-
-        // Larger text area for job description details
         JTextArea jobDetailArea = new JTextArea(
-                "Full job description goes here...\n\n" +
-                        "1) Key responsibilities\n" +
-                        "2) Requirements\n" +
-                        "3) Benefits\n" +
-                        "... (Placeholder text, from your old user screen or real data).");
+                "Full job description goes here...\n\n1) Key responsibilities\n2) Requirements\n3) Benefits\n...");
         jobDetailArea.setEditable(false);
         jobDetailArea.setLineWrap(true);
         jobDetailArea.setWrapStyleWord(true);
         jobDetailArea.setFont(new Font("SansSerif", Font.PLAIN, 14));
-
         JScrollPane jobDetailScroll = new JScrollPane(jobDetailArea);
         jobDetailScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-
-        // Add elements to the right panel
         JPanel topDetailPanel = new JPanel();
         topDetailPanel.setLayout(new BoxLayout(topDetailPanel, BoxLayout.Y_AXIS));
         topDetailPanel.setBackground(Color.WHITE);
@@ -334,22 +322,15 @@ public class UserProfileScreen extends BaseScreen {
         topDetailPanel.add(jobShortDescLabel);
         topDetailPanel.add(Box.createVerticalStrut(10));
         topDetailPanel.add(actionPanel);
-
         rightPanel.add(topDetailPanel, BorderLayout.NORTH);
         rightPanel.add(jobDetailScroll, BorderLayout.CENTER);
-
-        // Add the left and right panels to the JSplitPane
         splitPane.setLeftComponent(leftPanel);
         splitPane.setRightComponent(rightPanel);
-
-        // Combine the search bar (top) and the splitPane (center) in a parent panel
         JPanel centerPanel = new JPanel(new BorderLayout());
         centerPanel.setBackground(Color.WHITE);
         centerPanel.add(searchBarPanel, BorderLayout.NORTH);
         centerPanel.add(splitPane, BorderLayout.CENTER);
-
         mainPanel.add(centerPanel, BorderLayout.CENTER);
-
         return mainPanel;
     }
 
@@ -359,33 +340,24 @@ public class UserProfileScreen extends BaseScreen {
     private JPanel createApplicationsPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
-
         panel.add(createTitleLabel("Applications"), BorderLayout.NORTH);
-
-        // Create a table for user job applications with placeholder data.
         String[] columnNames = { "APP NO", "JOB TITLE", "APPLICATION DATE", "STATUS", "VIEW" };
         Object[][] data = new Object[10][5]; // Placeholder data.
         JTable appTable = new JTable(data, columnNames);
-
         appTable.setRowHeight(30);
         appTable.setFont(new Font("SansSerif", Font.PLAIN, 14));
         appTable.setGridColor(new Color(189, 195, 199));
         appTable.setShowGrid(true);
         appTable.setIntercellSpacing(new Dimension(5, 5));
         appTable.setBackground(Color.WHITE);
-
-        JTableHeader header = appTable.getTableHeader();
-        header.setPreferredSize(new Dimension(header.getPreferredSize().width, 35));
-        header.setFont(new Font("SansSerif", Font.BOLD, 16));
-        header.setBackground(new Color(52, 73, 94));
-        header.setForeground(Color.WHITE);
-
+        JTableHeader headerApp = appTable.getTableHeader();
+        headerApp.setPreferredSize(new Dimension(headerApp.getPreferredSize().width, 35));
+        headerApp.setFont(new Font("SansSerif", Font.BOLD, 16));
+        headerApp.setBackground(new Color(52, 73, 94));
+        headerApp.setForeground(Color.WHITE);
         appTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-
         JScrollPane tableScrollPane = new JScrollPane(appTable);
         tableScrollPane.getViewport().setBackground(Color.WHITE);
-
-        // Footer for pagination (placeholder).
         JPanel footerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         footerPanel.setBackground(Color.WHITE);
         JButton prevButton = new JButton("<");
@@ -396,7 +368,6 @@ public class UserProfileScreen extends BaseScreen {
         footerPanel.add(prevButton);
         footerPanel.add(pageLabel);
         footerPanel.add(nextButton);
-
         panel.add(tableScrollPane, BorderLayout.CENTER);
         panel.add(footerPanel, BorderLayout.SOUTH);
         return panel;
@@ -409,12 +380,10 @@ public class UserProfileScreen extends BaseScreen {
         JPanel containerPanel = new JPanel();
         containerPanel.setLayout(new BoxLayout(containerPanel, BoxLayout.Y_AXIS));
         containerPanel.setOpaque(false);
-
         JPanel profilePicPanel = new JPanel(new BorderLayout());
         profilePicPanel.setMaximumSize(new Dimension(150, 150));
         profilePicPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
         profilePicPanel.setOpaque(false);
-
         profilePicLabel = new JLabel("Add Profile Picture", SwingConstants.CENTER);
         profilePicLabel.setPreferredSize(new Dimension(120, 120));
         profilePicLabel.setMinimumSize(new Dimension(120, 120));
@@ -424,21 +393,16 @@ public class UserProfileScreen extends BaseScreen {
         profilePicLabel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
         profilePicLabel.setOpaque(true);
         profilePicLabel.setBackground(Color.LIGHT_GRAY);
-
         profilePicPanel.add(profilePicLabel, BorderLayout.CENTER);
-
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
         buttonPanel.setOpaque(false);
         uploadButton = ButtonFactory.createSideButton("Upload");
         removeButton = ButtonFactory.createSideButton("Remove");
         removeButton.setVisible(false);
-
         uploadButton.addActionListener(e -> uploadProfilePicture());
         removeButton.addActionListener(e -> removeProfilePicture());
-
         buttonPanel.add(uploadButton);
         buttonPanel.add(removeButton);
-
         containerPanel.add(profilePicPanel);
         containerPanel.add(Box.createVerticalStrut(5));
         containerPanel.add(buttonPanel);
@@ -459,120 +423,160 @@ public class UserProfileScreen extends BaseScreen {
         gbc.gridx = 0;
         gbc.gridy = 0;
         formPanel.add(new JLabel("<html>First Name <font color='red'>*</font>:</html>"), gbc);
-
         gbc.gridx = 1;
-        formPanel.add(txtFirstName, gbc); // Use instance variable
-
+        formPanel.add(txtFirstName, gbc);
         gbc.gridx = 2;
         formPanel.add(new JLabel("<html>Last Name <font color='red'>*</font>:</html>"), gbc);
-
         gbc.gridx = 3;
-        formPanel.add(txtLastName, gbc); // Use instance variable
+        formPanel.add(txtLastName, gbc);
 
         // Row 1: Email and Phone
         gbc.gridx = 0;
         gbc.gridy = 1;
         formPanel.add(new JLabel("<html>Email <font color='red'>*</font>:</html>"), gbc);
-
         gbc.gridx = 1;
-        formPanel.add(txtEmail, gbc); // Use instance variable
-
+        formPanel.add(txtEmail, gbc);
         gbc.gridx = 2;
         formPanel.add(new JLabel("<html>Phone <font color='red'>*</font>:</html>"), gbc);
-
         gbc.gridx = 3;
-        formPanel.add(txtPhone, gbc); // Use instance variable
+        formPanel.add(txtPhone, gbc);
 
         // Row 2: Current Company and Job Role
         gbc.gridx = 0;
         gbc.gridy = 2;
         formPanel.add(new JLabel("<html>Current Company <font color='red'>*</font>:</html>"), gbc);
-
         gbc.gridx = 1;
-        formPanel.add(txtCompany, gbc); // Use instance variable
-
+        formPanel.add(txtCompany, gbc);
         gbc.gridx = 2;
         formPanel.add(new JLabel("<html>Job Role <font color='red'>*</font>:</html>"), gbc);
-
         gbc.gridx = 3;
-        formPanel.add(txtJobRole, gbc); // Use instance variable
+        formPanel.add(txtJobRole, gbc);
 
         // Row 3: Preferences / Skills (single column)
         gbc.gridx = 0;
         gbc.gridy = 3;
         formPanel.add(new JLabel("Preferences / Skills:"), gbc);
-
         gbc.gridx = 1;
-        formPanel.add(txtPreferences, gbc); // Use instance variable
+        formPanel.add(txtPreferences, gbc);
 
         // Row 4: LinkedIn URL
         gbc.gridx = 0;
         gbc.gridy = 4;
         formPanel.add(new JLabel("LinkedIn URL:"), gbc);
         gbc.gridx = 1;
-        formPanel.add(txtLinkedIn, gbc); // Use instance variable
+        formPanel.add(txtLinkedIn, gbc);
 
         // Row 5: Availability
         gbc.gridx = 0;
         gbc.gridy = 5;
         formPanel.add(new JLabel("Availability:"), gbc);
         gbc.gridx = 1;
-        formPanel.add(txtAvailability, gbc); // Use instance variable
+        formPanel.add(txtAvailability, gbc);
 
-        // Add the resume field and save button in subsequent rows
+        // Add the resume field.
         addResumeField(formPanel, gbc);
-        // addSaveButton(formPanel, gbc);
 
         return formPanel;
     }
 
     private void addResumeField(JPanel formPanel, GridBagConstraints gbc) {
-        // Increment for resume field.
+        // Label: "Resume (Optional):"
         gbc.gridx = 0;
         gbc.gridy++;
         formPanel.add(new JLabel("Resume (Optional):"), gbc);
 
-        // Panel to hold the two buttons (Upload and Delete)
+        // Panel to hold Upload and Delete buttons for resume.
         JPanel resumeButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
-
-        // Upload Resume button
+        resumeButtonPanel.setOpaque(false);
         JButton uploadResumeButton = new JButton("Upload");
         resumeButtonPanel.add(uploadResumeButton);
-
-        // Delete Resume button
         JButton deleteResumeButton = new JButton("Delete");
-        // Initially, hide or disable the Delete button since no file is selected.
         deleteResumeButton.setVisible(false);
         resumeButtonPanel.add(deleteResumeButton);
 
-        // Add the panel to the form.
         gbc.gridx = 1;
         formPanel.add(resumeButtonPanel, gbc);
 
-        // Action for the Upload button:
+        // Next row: Instead of adding a download button, add a clickable label for the
+        // file name.
+        gbc.gridx = 0;
+        gbc.gridy++;
+        formPanel.add(new JLabel("Resume:"), gbc);
+
+        // Create the clickable label.
+        resumeFileNameLabel = new JLabel();
+        resumeFileNameLabel.setForeground(Color.BLUE); // typical hyperlink color
+        resumeFileNameLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        resumeFileNameLabel.setText("<html><u>No file selected</u></html>");
+
+        // Add a mouse listener to trigger download when the label is clicked.
+        resumeFileNameLabel.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                downloadResume();
+            }
+        });
+
+        gbc.gridx = 1;
+        formPanel.add(resumeFileNameLabel, gbc);
+
+        // Action for the Upload button.
         uploadResumeButton.addActionListener(e -> {
             JFileChooser fileChooser = new JFileChooser();
             fileChooser.setFileFilter(new FileNameExtensionFilter("PDF Files", "pdf"));
-            int returnValue = fileChooser.showOpenDialog(this); // show dialog relative to frame
+            int returnValue = fileChooser.showOpenDialog(this);
             if (returnValue == JFileChooser.APPROVE_OPTION) {
-                resumeFile = fileChooser.getSelectedFile();
+                File resumeFile = fileChooser.getSelectedFile();
                 if (resumeFile != null) {
-                    // Update button text and show the Delete button.
-                    uploadResumeButton.setText("Selected: " + resumeFile.getName());
-                    deleteResumeButton.setVisible(true);
+                    byte[] resumeBytes = fileToByteArray(resumeFile);
+                    if (resumeBytes != null) {
+                        UserDAO userDAO = new UserDAO();
+                        boolean updated = userDAO.updateUserResume(loggedInEmail, resumeBytes);
+                        if (updated) {
+                            // Instead of showing a button, update the clickable label with the file name.
+                            String fileName = resumeFile.getName();
+                            resumeFileNameLabel.setText("<html><u>" + fileName + "</u></html>");
+                        } else {
+                            JOptionPane.showMessageDialog(this, "Failed to update resume in database.",
+                                    "Error", JOptionPane.ERROR_MESSAGE);
+                        }
+                    }
                 }
             }
         });
 
-        // Action for the Delete button:
+        // Action for the Delete button (optional).
         deleteResumeButton.addActionListener(e -> {
-            // Clear the resume file variable.
-            resumeFile = null;
-            // Reset the Upload button text.
-            uploadResumeButton.setText("Upload Resume");
-            // Hide the Delete button.
-            deleteResumeButton.setVisible(false);
+            // Optionally, call a method to delete resume from DB and then update the UI.
+            resumeFileNameLabel.setText("<html><u>No file selected</u></html>");
         });
+    }
+
+    // Download the resume from DB and open it.
+    private void downloadResume() {
+        UserDAO userDAO = new UserDAO();
+        byte[] resumeBytes = userDAO.getUserResume(loggedInEmail);
+        if (resumeBytes != null && resumeBytes.length > 0) {
+            try {
+                File tempFile = File.createTempFile("resume_", ".pdf");
+                tempFile.deleteOnExit();
+                try (FileOutputStream fos = new FileOutputStream(tempFile)) {
+                    fos.write(resumeBytes);
+                }
+                Desktop.getDesktop().open(tempFile);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(this,
+                        "Could not open the resume file.",
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        } else {
+            JOptionPane.showMessageDialog(this,
+                    "No resume found to download.",
+                    "Resume Not Found",
+                    JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void addSaveButton(JPanel formPanel, GridBagConstraints gbc) {
@@ -581,50 +585,48 @@ public class UserProfileScreen extends BaseScreen {
         JButton saveButton = new JButton("Save");
         saveButton.setPreferredSize(new Dimension(100, 30));
         formPanel.add(saveButton, gbc);
-
         saveButton.addActionListener(e -> saveProfileData());
     }
 
     private void saveProfileData() {
-        // Retrieve field values from instance variables.
-        String firstName = txtFirstName.getText();
-        String lastName = txtLastName.getText();
-        // Additional field values...
+        UserDAO userDAO = new UserDAO();
+        User user = userDAO.getUserProfile(loggedInEmail);
+        if (user == null) {
+            JOptionPane.showMessageDialog(this, "User not found.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
-        System.out.println("Profile data saved.");
+        user.setFirstName(txtFirstName.getText());
+        user.setLastName(txtLastName.getText());
+        user.setEmail(txtEmail.getText());
+        user.setMobile(txtPhone.getText());
+        user.setCompany(txtCompany.getText());
+        user.setJobRole(txtJobRole.getText());
+        user.setPreferences(txtPreferences.getText());
+        user.setLinkedInUrl(txtLinkedIn.getText());
+        user.setAvailability(txtAvailability.getText());
 
-        if (resumeFile != null) {
-            System.out.println("Resume file selected: " + resumeFile.getAbsolutePath());
-             // Process the file, e.g., copy to server or store path in DB.
-            }
+        boolean success = userDAO.updateUserProfile(user);
+        if (success) {
+            JOptionPane.showMessageDialog(this, "Profile updated successfully.");
+        } else {
+            JOptionPane.showMessageDialog(this, "Failed to update profile.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
-    /**
-     * Adds an individual form field (label and text field) to the given panel.
-     * The label is formatted with an HTML string that appends a black colon and a
-     * red asterisk.
-     */
-    private void addFormField(JPanel panel, String labelText, int row, int col, GridBagConstraints gbc) {
-        JLabel label = new JLabel(
-                "<html>" + labelText + " <font color='black'>:</font> <font color='red'>*</font></html>");
-        label.setFont(new Font("SansSerif", Font.BOLD, 16));
-
-        JTextField textField = new JTextField(25);
-        textField.setFont(new Font("SansSerif", Font.PLAIN, 16));
-        textField.setPreferredSize(new Dimension(250, 30));
-
-        gbc.gridx = col * 2;
-        gbc.gridy = row;
-        panel.add(label, gbc);
-
-        gbc.gridx = col * 2 + 1;
-        panel.add(textField, gbc);
+    private byte[] fileToByteArray(File file) {
+        try (FileInputStream fis = new FileInputStream(file)) {
+            byte[] data = new byte[(int) file.length()];
+            int readBytes = fis.read(data);
+            System.out.println("Read " + readBytes + " bytes from resume file.");
+            return data;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
-    /**
-     * Opens a file chooser, scales the selected image, and updates the profile
-     * picture.
-     */
+    // Upload profile picture
     private void uploadProfilePicture() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Select Profile Picture");
@@ -632,12 +634,19 @@ public class UserProfileScreen extends BaseScreen {
         if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             File selectedFile = fileChooser.getSelectedFile();
             if (selectedFile.exists()) {
+                byte[] imageBytes = fileToByteArray(selectedFile);
                 ImageIcon imageIcon = new ImageIcon(selectedFile.getAbsolutePath());
                 Image image = imageIcon.getImage().getScaledInstance(
                         profilePicLabel.getWidth(), profilePicLabel.getHeight(), Image.SCALE_SMOOTH);
                 profilePicLabel.setIcon(new ImageIcon(image));
                 profilePicLabel.setText("");
                 removeButton.setVisible(true);
+                UserDAO userDAO = new UserDAO();
+                boolean updated = userDAO.updateUserProfilePicture(loggedInEmail, imageBytes);
+                if (!updated) {
+                    JOptionPane.showMessageDialog(this, "Failed to update profile picture in database.",
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                }
             } else {
                 JOptionPane.showMessageDialog(this,
                         "File does not exist.",
@@ -647,18 +656,14 @@ public class UserProfileScreen extends BaseScreen {
         }
     }
 
-    /**
-     * Resets the profile picture.
-     */
+    // Remove profile picture
     private void removeProfilePicture() {
         profilePicLabel.setIcon(null);
         profilePicLabel.setText("Add Profile Picture");
         removeButton.setVisible(false);
     }
 
-    /**
-     * Handles navigation button events by switching cards in the right panel.
-     */
+    // Handles navigation events.
     protected void handleNavigation(ActionEvent e) {
         String command = ((JButton) e.getSource()).getText();
         CardLayout cl = (CardLayout) rightPanel.getLayout();
@@ -680,19 +685,14 @@ public class UserProfileScreen extends BaseScreen {
         }
     }
 
-    /**
-     * Logs out of the application and launches the login screen.
-     */
+    // Logs out and closes the screen.
     private void performLogout() {
         System.out.println("Logging out...");
         dispose();
-        // SwingUtilities.invokeLater(() -> new com.group04.GUI.JobPortalApplication());
+        // Optionally, launch the login screen again.
     }
 
-    /*public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new UserProfileScreen("Pg991@example.com"));
-    } */
-
+    // Load user data from DB (profile picture, details, resume status).
     private void loadUserData() {
         UserDAO userDAO = new UserDAO();
         User user = userDAO.getUserProfile(loggedInEmail);
@@ -707,6 +707,36 @@ public class UserProfileScreen extends BaseScreen {
             txtPreferences.setText(user.getPreferences());
             txtLinkedIn.setText(user.getLinkedInUrl());
             txtAvailability.setText(user.getAvailability());
+
+            // Load profile picture.
+            byte[] picBytes = userDAO.getUserProfilePicture(loggedInEmail);
+            if (picBytes != null) {
+                ImageIcon icon = new ImageIcon(picBytes);
+                int labelWidth = profilePicLabel.getWidth();
+                int labelHeight = profilePicLabel.getHeight();
+                if (labelWidth == 0 || labelHeight == 0) {
+                    Dimension pref = profilePicLabel.getPreferredSize();
+                    labelWidth = (pref.width > 0) ? pref.width : 120;
+                    labelHeight = (pref.height > 0) ? pref.height : 120;
+                }
+                Image image = icon.getImage().getScaledInstance(labelWidth, labelHeight, Image.SCALE_SMOOTH);
+                profilePicLabel.setIcon(new ImageIcon(image));
+                profilePicLabel.setText("");
+                removeButton.setVisible(true);
+            }
+
+            // Load resume.
+            // Load resume.
+            byte[] resumeBytes = userDAO.getUserResume(loggedInEmail);
+            if (resumeBytes != null && resumeBytes.length > 0) {
+                System.out.println("Resume is available, size: " + resumeBytes.length);
+                // Update the clickable label. You can choose to display "View Resume" or a file
+                // name if you stored it.
+                resumeFileNameLabel.setText("<html><u>View by default Resume</u></html>");
+            } else {
+                System.out.println("No resume found for this user.");
+                resumeFileNameLabel.setText("<html><u>No file selected</u></html>");
+            }
         } else {
             JOptionPane.showMessageDialog(this, "User data not found.", "Error", JOptionPane.ERROR_MESSAGE);
         }
