@@ -7,6 +7,8 @@ import javax.swing.table.TableColumnModel;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
+import java.sql.Date;
+import java.time.LocalDate;
 import java.util.Map;
 
 import com.group04.DAO.UserDAO;
@@ -38,15 +40,16 @@ public class RecruiterProfileScreen {
     private JTextField companyWebsiteField;
 
     // ADD JOB POST SCREEN
-    private JTextField jobTitleField = new JTextField(15);
-    private JComboBox<String> jobTypeComboBox = new JComboBox<>(new String[] { "Full Time", "Part Time" });
-    private JTextField minSalaryField = new JTextField(7);
-    private JTextField maxSalaryField = new JTextField(7);
-    private JTextArea jobDescField = new JTextArea(4, 30);
-    private JTextField jobLocationField = new JTextField(15);
-    private JComboBox<String> jobModeComboBox = new JComboBox<>(new String[] { "On-site", "Remote", "Hybrid" });
-    private int userID;
+    private JTextField jobIdField;
+    private JTextField jobTitleField;
+    private JTextField minSalaryField;
+    private JTextField maxSalaryField;
+    private JTextArea jobDescField;
+    private JTextField jobLocationField;
+    private JComboBox<String> jobTypeComboBox;
 
+    private int userID;
+    private int companyId;
 
     public RecruiterProfileScreen(String email) {
         this.recruiterEmail = email;
@@ -54,6 +57,7 @@ public class RecruiterProfileScreen {
         UserDAO userDAO = new UserDAO();
         this.recruiterData = userDAO.getRecruiterInfoByEmail(recruiterEmail);
         userID = userDAO.getUserIdByEmail(recruiterEmail);
+        companyId = userDAO.getCompanyIdByEmail(recruiterEmail); // You’ll implement this method
 
     }
 
@@ -527,11 +531,11 @@ public class RecruiterProfileScreen {
         // gbc.gridx = 1;
         // formPanel.add(new JTextField(15), gbc);
         gbc.gridx = 1;
-        JTextField jobIdField = new JTextField(15);
+        jobIdField = new JTextField(15);
         jobIdField.setEditable(false); // Disable editing
         jobIdField.setBackground(new Color(230, 230, 230)); // Optional: greyed out background
 
-        int generatedId = new UserDAO().getNextJobIdForRecruiter(recruiterEmail);
+        int generatedId = new UserDAO().getNextGlobalJobId();
         String genJobID = "JID0" + String.valueOf(generatedId);
         jobIdField.setText(genJobID);
 
@@ -545,7 +549,8 @@ public class RecruiterProfileScreen {
         jobTitleLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
         formPanel.add(jobTitleLabel, gbc);
         gbc.gridx = 1;
-        formPanel.add(new JTextField(15), gbc);
+        jobTitleField = new JTextField(15);
+        formPanel.add(jobTitleField, gbc);
 
         // JOB TYPE field
         gbc.gridx = 0;
@@ -555,7 +560,7 @@ public class RecruiterProfileScreen {
         jobTypeLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
         formPanel.add(jobTypeLabel, gbc);
         gbc.gridx = 1;
-        JComboBox<String> jobTypeComboBox = new JComboBox<>(new String[] { "Full Time", "Part Time" });
+        jobTypeComboBox = new JComboBox<>(new String[] { "Onsite", "Remote", "Hybrid" });
         formPanel.add(jobTypeComboBox, gbc);
 
         // SALARY RANGE field
@@ -566,13 +571,13 @@ public class RecruiterProfileScreen {
         salaryRangeLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
         formPanel.add(salaryRangeLabel, gbc);
         gbc.gridx = 1;
-        JTextField minSalaryField = new JTextField(7);
+        minSalaryField = new JTextField(7);
         formPanel.add(minSalaryField, gbc);
         gbc.gridx = 2;
         // "TO:" separator without required marker
         formPanel.add(new JLabel("<html>To <font color='black'>:</font> <font color='red'>*</font></html>"), gbc);
         gbc.gridx = 3;
-        JTextField maxSalaryField = new JTextField(7);
+        maxSalaryField = new JTextField(7);
         formPanel.add(maxSalaryField, gbc);
 
         // JOB DESCRIPTION field
@@ -585,30 +590,32 @@ public class RecruiterProfileScreen {
         gbc.gridx = 1;
         gbc.gridwidth = 3;
         gbc.fill = GridBagConstraints.BOTH;
-        JTextArea jobDescField = new JTextArea(4, 30);
+        jobDescField = new JTextArea(4, 30);
         formPanel.add(new JScrollPane(jobDescField), gbc);
         gbc.gridwidth = 1; // Reset gridwidth and fill
 
-        // JOB LOCATION field
+        // REQUIRED EXPERIENCE field
         gbc.gridx = 0;
         gbc.gridy = 6;
+        JLabel experienceLabel = new JLabel(
+                "<html>Required Experience <font color='black'>:</font> <font color='red'>*</font></html>");
+        experienceLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
+        formPanel.add(experienceLabel, gbc);
+
+        gbc.gridx = 1;
+        JTextField experienceField = new JTextField(15); // Store this as a class-level variable if needed
+        formPanel.add(experienceField, gbc);
+
+        // JOB LOCATION field
+        gbc.gridx = 0;
+        gbc.gridy = 7;
         JLabel jobLocationLabel = new JLabel(
                 "<html>Job Location <font color='black'>:</font> <font color='red'>*</font></html>");
         jobLocationLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
         formPanel.add(jobLocationLabel, gbc);
         gbc.gridx = 1;
-        formPanel.add(new JTextField(15), gbc);
-
-        // JOB MODE field
-        gbc.gridx = 0;
-        gbc.gridy = 7;
-        JLabel jobModeLabel = new JLabel(
-                "<html>Job Mode <font color='black'>:</font> <font color='red'>*</font></html>");
-        jobModeLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
-        formPanel.add(jobModeLabel, gbc);
-        gbc.gridx = 1;
-        JComboBox<String> jobModeComboBox = new JComboBox<>(new String[] { "On-site", "Remote", "Hybrid" });
-        formPanel.add(jobModeComboBox, gbc);
+        jobLocationField = new JTextField(15);
+        formPanel.add(jobLocationField, gbc);
 
         // Save Button Section
         gbc.gridx = 1;
@@ -621,12 +628,19 @@ public class RecruiterProfileScreen {
         saveButton.addActionListener(e -> {
             try {
                 String jobTitle = jobTitleField.getText().trim();
-                String jobType = jobTypeComboBox.getSelectedItem().toString();
+
+                String selectedType = jobTypeComboBox.getSelectedItem().toString();
+                int jobTypeId = switch (selectedType) {
+                    case "Onsite" -> 1;
+                    case "Remote" -> 2;
+                    case "Hybrid" -> 3;
+                    default -> 0; // or throw error
+                };
+
                 double minSalary = Double.parseDouble(minSalaryField.getText().trim());
                 double maxSalary = Double.parseDouble(maxSalaryField.getText().trim());
                 String jobDesc = jobDescField.getText().trim();
                 String jobLocation = jobLocationField.getText().trim();
-                String jobMode = jobModeComboBox.getSelectedItem().toString();
 
                 // Optional: basic validation
                 if (jobTitle.isEmpty() || jobDesc.isEmpty() || jobLocation.isEmpty()) {
@@ -635,11 +649,13 @@ public class RecruiterProfileScreen {
                     return;
                 }
 
+                String requiredExperience = experienceField.getText().trim();
+                Date dateOfApplication = Date.valueOf(LocalDate.now());
 
                 boolean success = new UserDAO().addJobPost(
-                        userID, jobTitle, jobType,
+                        userID, companyId, jobTitle, jobTypeId,
                         minSalary, maxSalary, jobDesc,
-                        jobLocation, jobMode);
+                        jobLocation, requiredExperience, dateOfApplication);
 
                 if (success) {
                     JOptionPane.showMessageDialog(frame, "Job Post Added Successfully!");

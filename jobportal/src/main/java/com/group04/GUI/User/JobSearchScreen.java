@@ -15,10 +15,6 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
-import com.group04.GUI.User.Components.UIUtils;
-import com.group04.GUI.User.Components.BaseScreen;
-import com.group04.GUI.User.Components.ButtonFactory;
-
 public class JobSearchScreen extends BaseScreen {
 
     private String userEmail;

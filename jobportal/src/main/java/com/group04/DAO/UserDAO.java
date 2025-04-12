@@ -115,7 +115,7 @@ public class UserDAO {
                 // Instead of Company_ID, set the company name.
                 user.setCompany(rs.getString("Company_name"));
                 user.setJobRole(rs.getString("Job_role"));
-                // Combine Skill_1..Skill_4 into one string for preferences.
+                // Combine Skill_1..Skill_4 into one string preferences.
                 String skill1 = rs.getString("Skill_1");
                 String skill2 = rs.getString("Skill_2");
                 String skill3 = rs.getString("Skill_3");
@@ -346,46 +346,50 @@ public class UserDAO {
     }
 
     // Add Job Posts Screen
-    public int getNextJobIdForRecruiter(String recruiterEmail) {
-        String sql = "SELECT COUNT(*) AS count FROM recruiters_applications WHERE recruiter_email = ?";
-        int count = 0;
+    public int getNextGlobalJobId() {
+        String sql = "SELECT MAX(Job_ID) AS maxId FROM recruiters_applications";
+        int nextId = 1;
 
         try (Connection conn = getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, recruiterEmail);
-            ResultSet rs = stmt.executeQuery();
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                ResultSet rs = stmt.executeQuery()) {
 
             if (rs.next()) {
-                count = rs.getInt("count");
+                int maxId = rs.getInt("maxId");
+                if (!rs.wasNull()) {
+                    nextId = maxId + 1;
+                }
             }
 
         } catch (SQLException e) {
             e.printStackTrace();
         }
 
-        return count + 1; // Next Job ID
+        return nextId;
     }
 
-    public boolean addJobPost(int userId, String jobTitle, String jobType,
+    public boolean addJobPost(int userId, int companyId, String jobTitle, int jobTypeId,
             double minSalary, double maxSalary, String jobDescription,
-            String jobLocation, String jobMode) {
+            String jobLocation, String requiredExperience, Date dateOfApplication) {
 
-        String sql = "INSERT INTO Job_Posts (User_ID, Job_Title, Job_Type, Min_Salary, Max_Salary, " +
-                "Job_Description, Job_Location, Job_Mode, Status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO recruiters_applications " +
+                "(user_ID, company_ID, Job_Title, Job_Type, Salary_Min, Salary_Max, " +
+                "Job_Description, Job_location, Required_Experience, Date_Of_Application) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, userId);
-            stmt.setString(2, jobTitle);
-            stmt.setString(3, jobType);
-            stmt.setDouble(4, minSalary);
-            stmt.setDouble(5, maxSalary);
-            stmt.setString(6, jobDescription);
-            stmt.setString(7, jobLocation);
-            stmt.setString(8, jobMode);
-            stmt.setString(9, "Open"); // default status
+            stmt.setInt(2, companyId);
+            stmt.setString(3, jobTitle);
+            stmt.setInt(4, jobTypeId);
+            stmt.setDouble(5, minSalary);
+            stmt.setDouble(6, maxSalary);
+            stmt.setString(7, jobDescription);
+            stmt.setString(8, jobLocation);
+            stmt.setString(9, requiredExperience);
+            stmt.setDate(10, dateOfApplication);
 
             return stmt.executeUpdate() > 0;
 
@@ -403,6 +407,21 @@ public class UserDAO {
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
                 return rs.getInt("User_ID");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return -1;
+    }
+
+    public int getCompanyIdByEmail(String email) {
+        String sql = "SELECT company_ID FROM Users WHERE Email = ?";
+        try (Connection conn = getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, email);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt("company_ID");
             }
         } catch (SQLException e) {
             e.printStackTrace();
