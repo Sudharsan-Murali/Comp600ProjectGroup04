@@ -41,14 +41,14 @@ import java.sql.Statement;
 
     public static void main(String[] args) {
         runSQLFile("jobportal\\src\\Resources\\sqlFiles\\createdb.sql"); // Path to your .sql file
-        runSQLFile("jobportal\\src\\Resources\\sqlFiles\\User_roles.sql");
-        runSQLFile("jobportal\\src\\Resources\\sqlFiles\\Job_Type.sql");
-        runSQLFile("jobportal\\src\\Resources\\sqlFiles\\Security_Ques.sql");
-        runSQLFile("jobportal\\src\\Resources\\sqlFiles\\company.sql");
-        runSQLFile("jobportal\\src\\Resources\\sqlFiles\\Users.sql");
-        runSQLFile("jobportal\\src\\Resources\\sqlFiles\\Application_Status.sql");
-        runSQLFile("jobportal\\src\\Resources\\sqlFiles\\Applications_User.sql");
-        runSQLFile("jobportal\\src\\Resources\\sqlFiles\\Recruiters_Applications.sql");
+        // runSQLFile("jobportal\\src\\Resources\\sqlFiles\\User_roles.sql");
+        // runSQLFile("jobportal\\src\\Resources\\sqlFiles\\Job_Type.sql");
+        // runSQLFile("jobportal\\src\\Resources\\sqlFiles\\Security_Ques.sql");
+        // runSQLFile("jobportal\\src\\Resources\\sqlFiles\\company.sql");
+        // runSQLFile("jobportal\\src\\Resources\\sqlFiles\\Users.sql");
+        // runSQLFile("jobportal\\src\\Resources\\sqlFiles\\Application_Status.sql");
+        // runSQLFile("jobportal\\src\\Resources\\sqlFiles\\Applications_User.sql");
+        // runSQLFile("jobportal\\src\\Resources\\sqlFiles\\Recruiters_Applications.sql");
         runSQLFile("jobportal\\src\\Resources\\sqlFiles\\Insertdataindb.sql");
         
         //runSQLFile("jobportal\\Resources\\deletedb.sql");
