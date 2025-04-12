@@ -4,7 +4,7 @@ import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
 
-public class UserDAO {  
+public class UserDAO {
 
     private static final String URL = "jdbc:mysql://localhost:3306/job_portal";
     private static final String USER = "root";
@@ -91,11 +91,11 @@ public class UserDAO {
     public User getUserProfile(String email) {
         // Updated query to also fetch Resume_default.
         String query = "SELECT u.First_name, u.Last_name, u.Email, u.Mobile, u.Dob, u.Password, u.Role_ID, " +
-                       "u.Security_Que, u.Security_Ans, c.Company_name, u.Job_role, u.Skill_1, u.Skill_2, u.Skill_3, " +
-                       "u.Skill_4, u.LinkedIN_url, u.Availability, u.Resume_default " +
-                       "FROM Users u " +
-                       "LEFT JOIN Company c ON u.Company_ID = c.Company_ID " +
-                       "WHERE u.Email = ?";
+                "u.Security_Que, u.Security_Ans, c.Company_name, u.Job_role, u.Skill_1, u.Skill_2, u.Skill_3, " +
+                "u.Skill_4, u.LinkedIN_url, u.Availability, u.Resume_default " +
+                "FROM Users u " +
+                "LEFT JOIN Company c ON u.Company_ID = c.Company_ID " +
+                "WHERE u.Email = ?";
         User user = null;
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setString(1, email);
@@ -156,8 +156,7 @@ public class UserDAO {
         }
         return user;
     }
-    
-    
+
     public int getCompanyIdByName(String companyName) {
         String query = "SELECT Company_ID FROM Company WHERE Company_name = ?";
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
@@ -170,14 +169,15 @@ public class UserDAO {
             e.printStackTrace();
         }
         return -1; // Return -1 if company not found. You can handle this as an error.
-    }    
+    }
 
     // ✅ Update user profile
     public boolean updateUserProfile(User user) {
         // Updated query to include extra fields.
         String query = "UPDATE Users SET First_name = ?, Last_name = ?, Mobile = ?, Dob = ?, Password = ?, " +
-               "Security_Que = ?, Security_Ans = ?, Company_ID = ?, Job_role = ?, LinkedIN_url = ?, Availability = ? " +
-               "WHERE Email = ?";
+                "Security_Que = ?, Security_Ans = ?, Company_ID = ?, Job_role = ?, LinkedIN_url = ?, Availability = ? "
+                +
+                "WHERE Email = ?";
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setString(1, user.getFirstName());
             stmt.setString(2, user.getLastName());
@@ -187,12 +187,12 @@ public class UserDAO {
             stmt.setString(6, user.getSecurityQuestion());
             stmt.setString(7, user.getSecurityAnswer());
             int companyId = getCompanyIdByName(user.getCompany());
-            if(companyId == -1) {
+            if (companyId == -1) {
                 // Handle error, for example:
                 System.err.println("Company not found for: " + user.getCompany());
                 return false;
             }
-            stmt.setInt(8, companyId);            
+            stmt.setInt(8, companyId);
             stmt.setString(9, user.getJobRole());
             stmt.setString(10, user.getLinkedInUrl());
             stmt.setString(11, user.getAvailability());
@@ -203,6 +203,7 @@ public class UserDAO {
             return false;
         }
     }
+
     /*
      * USER SECTION
      */
@@ -244,8 +245,8 @@ public class UserDAO {
             e.printStackTrace();
             return false;
         }
-    }    
-    
+    }
+
     public byte[] getUserResume(String email) {
         String sql = "SELECT Resume_default FROM Users WHERE Email = ?";
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -260,8 +261,8 @@ public class UserDAO {
             e.printStackTrace();
         }
         return null;
-    }        
-    
+    }
+
     /*
      * RECRUITER SECTION
      */
@@ -342,6 +343,71 @@ public class UserDAO {
             e.printStackTrace();
         }
         return null;
+    }
+
+    // Add Job Posts Screen
+    public int getNextJobIdForRecruiter(String recruiterEmail) {
+        String sql = "SELECT COUNT(*) AS count FROM recruiters_applications WHERE recruiter_email = ?";
+        int count = 0;
+
+        try (Connection conn = getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, recruiterEmail);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                count = rs.getInt("count");
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return count + 1; // Next Job ID
+    }
+
+    public boolean addJobPost(int userId, String jobTitle, String jobType,
+            double minSalary, double maxSalary, String jobDescription,
+            String jobLocation, String jobMode) {
+
+        String sql = "INSERT INTO Job_Posts (User_ID, Job_Title, Job_Type, Min_Salary, Max_Salary, " +
+                "Job_Description, Job_Location, Job_Mode, Status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        try (Connection conn = getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, userId);
+            stmt.setString(2, jobTitle);
+            stmt.setString(3, jobType);
+            stmt.setDouble(4, minSalary);
+            stmt.setDouble(5, maxSalary);
+            stmt.setString(6, jobDescription);
+            stmt.setString(7, jobLocation);
+            stmt.setString(8, jobMode);
+            stmt.setString(9, "Open"); // default status
+
+            return stmt.executeUpdate() > 0;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public int getUserIdByEmail(String email) {
+        String query = "SELECT User_ID FROM Users WHERE Email = ?";
+        try (Connection conn = getConnection();
+                PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, email);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt("User_ID");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return -1;
     }
 
 }

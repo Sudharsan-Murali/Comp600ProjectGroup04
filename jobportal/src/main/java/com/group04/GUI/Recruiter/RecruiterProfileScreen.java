@@ -11,10 +11,12 @@ import java.util.Map;
 
 import com.group04.DAO.UserDAO;
 import com.group04.GUI.JobPortalApplication; // For handling the logout action
-import com.group04.GUI.User.Components.UIUtils;
-import com.group04.GUI.User.Components.ButtonFactory;
-import com.group04.GUI.User.Components.SidePanel;
-import com.group04.GUI.User.Components.UIConstants;
+import com.group04.GUI.Components.ButtonEditor;
+import com.group04.GUI.Components.ButtonFactory;
+import com.group04.GUI.Components.ButtonRenderer;
+import com.group04.GUI.Components.SidePanel;
+import com.group04.GUI.Components.UIConstants;
+import com.group04.GUI.Components.UIUtils;
 
 public class RecruiterProfileScreen {
 
@@ -35,11 +37,24 @@ public class RecruiterProfileScreen {
     private JTextField companyLinkedInField;
     private JTextField companyWebsiteField;
 
+    // ADD JOB POST SCREEN
+    private JTextField jobTitleField = new JTextField(15);
+    private JComboBox<String> jobTypeComboBox = new JComboBox<>(new String[] { "Full Time", "Part Time" });
+    private JTextField minSalaryField = new JTextField(7);
+    private JTextField maxSalaryField = new JTextField(7);
+    private JTextArea jobDescField = new JTextArea(4, 30);
+    private JTextField jobLocationField = new JTextField(15);
+    private JComboBox<String> jobModeComboBox = new JComboBox<>(new String[] { "On-site", "Remote", "Hybrid" });
+    private int userID;
+
+
     public RecruiterProfileScreen(String email) {
         this.recruiterEmail = email;
 
         UserDAO userDAO = new UserDAO();
         this.recruiterData = userDAO.getRecruiterInfoByEmail(recruiterEmail);
+        userID = userDAO.getUserIdByEmail(recruiterEmail);
+
     }
 
     public void createAndShowGUI() {
@@ -434,6 +449,25 @@ public class RecruiterProfileScreen {
         // Extend columns to fill available width.
         jobTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
 
+        // Edit Button
+        jobTable.getColumnModel().getColumn(5).setCellRenderer(new ButtonRenderer("Edit"));
+        jobTable.getColumnModel().getColumn(5).setCellEditor(new ButtonEditor("Edit", jobTable, row -> {
+            // Handle Edit logic (e.g., open job edit form)
+            System.out.println("Edit clicked for row " + row);
+        }));
+
+        // Delete Button
+        jobTable.getColumnModel().getColumn(6).setCellRenderer(new ButtonRenderer("Delete"));
+        jobTable.getColumnModel().getColumn(6).setCellEditor(new ButtonEditor("Delete", jobTable, row -> {
+            int confirm = JOptionPane.showConfirmDialog(frame,
+                    "Are you sure you want to delete this job post?",
+                    "Confirm Delete", JOptionPane.YES_NO_OPTION);
+            if (confirm == JOptionPane.YES_OPTION) {
+                System.out.println("Deleting row " + row);
+                // Add code to delete job from DB and refresh the table
+            }
+        }));
+
         JScrollPane tableScrollPane = new JScrollPane(jobTable);
         tableScrollPane.getViewport().setBackground(Color.WHITE);
 
@@ -487,17 +521,27 @@ public class RecruiterProfileScreen {
         // JOB ID field
         gbc.gridx = 0;
         gbc.gridy = 1;
-        JLabel jobIdLabel = new JLabel("<html>JOB ID <font color='black'>:</font> <font color='red'>*</font></html>");
+        JLabel jobIdLabel = new JLabel("<html>Job ID <font color='black'>:</font> <font color='red'>*</font></html>");
         jobIdLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
         formPanel.add(jobIdLabel, gbc);
+        // gbc.gridx = 1;
+        // formPanel.add(new JTextField(15), gbc);
         gbc.gridx = 1;
-        formPanel.add(new JTextField(15), gbc);
+        JTextField jobIdField = new JTextField(15);
+        jobIdField.setEditable(false); // Disable editing
+        jobIdField.setBackground(new Color(230, 230, 230)); // Optional: greyed out background
+
+        int generatedId = new UserDAO().getNextJobIdForRecruiter(recruiterEmail);
+        String genJobID = "JID0" + String.valueOf(generatedId);
+        jobIdField.setText(genJobID);
+
+        formPanel.add(jobIdField, gbc);
 
         // JOB TITLE field
         gbc.gridx = 0;
         gbc.gridy = 2;
         JLabel jobTitleLabel = new JLabel(
-                "<html>JOB TITLE <font color='black'>:</font> <font color='red'>*</font></html>");
+                "<html>Job Title <font color='black'>:</font> <font color='red'>*</font></html>");
         jobTitleLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
         formPanel.add(jobTitleLabel, gbc);
         gbc.gridx = 1;
@@ -507,17 +551,18 @@ public class RecruiterProfileScreen {
         gbc.gridx = 0;
         gbc.gridy = 3;
         JLabel jobTypeLabel = new JLabel(
-                "<html>JOB TYPE <font color='black'>:</font> <font color='red'>*</font></html>");
+                "<html>Job Type <font color='black'>:</font> <font color='red'>*</font></html>");
         jobTypeLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
         formPanel.add(jobTypeLabel, gbc);
         gbc.gridx = 1;
-        formPanel.add(new JTextField(15), gbc);
+        JComboBox<String> jobTypeComboBox = new JComboBox<>(new String[] { "Full Time", "Part Time" });
+        formPanel.add(jobTypeComboBox, gbc);
 
         // SALARY RANGE field
         gbc.gridx = 0;
         gbc.gridy = 4;
         JLabel salaryRangeLabel = new JLabel(
-                "<html>SALARY RANGE <font color='black'>:</font> <font color='red'>*</font></html>");
+                "<html>Salary Range <font color='black'>:</font> <font color='red'>*</font></html>");
         salaryRangeLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
         formPanel.add(salaryRangeLabel, gbc);
         gbc.gridx = 1;
@@ -525,7 +570,7 @@ public class RecruiterProfileScreen {
         formPanel.add(minSalaryField, gbc);
         gbc.gridx = 2;
         // "TO:" separator without required marker
-        formPanel.add(new JLabel("<html>TO <font color='black'>:</font> <font color='red'>*</font></html>"), gbc);
+        formPanel.add(new JLabel("<html>To <font color='black'>:</font> <font color='red'>*</font></html>"), gbc);
         gbc.gridx = 3;
         JTextField maxSalaryField = new JTextField(7);
         formPanel.add(maxSalaryField, gbc);
@@ -534,7 +579,7 @@ public class RecruiterProfileScreen {
         gbc.gridx = 0;
         gbc.gridy = 5;
         JLabel jobDescLabel = new JLabel(
-                "<html>JOB DESCRIPTION <font color='black'>:</font> <font color='red'>*</font></html>");
+                "<html>Job Description <font color='black'>:</font> <font color='red'>*</font></html>");
         jobDescLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
         formPanel.add(jobDescLabel, gbc);
         gbc.gridx = 1;
@@ -548,7 +593,7 @@ public class RecruiterProfileScreen {
         gbc.gridx = 0;
         gbc.gridy = 6;
         JLabel jobLocationLabel = new JLabel(
-                "<html>JOB LOCATION <font color='black'>:</font> <font color='red'>*</font></html>");
+                "<html>Job Location <font color='black'>:</font> <font color='red'>*</font></html>");
         jobLocationLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
         formPanel.add(jobLocationLabel, gbc);
         gbc.gridx = 1;
@@ -558,11 +603,12 @@ public class RecruiterProfileScreen {
         gbc.gridx = 0;
         gbc.gridy = 7;
         JLabel jobModeLabel = new JLabel(
-                "<html>JOB MODE <font color='black'>:</font> <font color='red'>*</font></html>");
+                "<html>Job Mode <font color='black'>:</font> <font color='red'>*</font></html>");
         jobModeLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
         formPanel.add(jobModeLabel, gbc);
         gbc.gridx = 1;
-        formPanel.add(new JTextField(15), gbc);
+        JComboBox<String> jobModeComboBox = new JComboBox<>(new String[] { "On-site", "Remote", "Hybrid" });
+        formPanel.add(jobModeComboBox, gbc);
 
         // Save Button Section
         gbc.gridx = 1;
@@ -571,6 +617,46 @@ public class RecruiterProfileScreen {
         gbc.anchor = GridBagConstraints.CENTER;
         JButton saveButton = new JButton("SAVE");
         saveButton.setPreferredSize(new Dimension(100, 30));
+
+        saveButton.addActionListener(e -> {
+            try {
+                String jobTitle = jobTitleField.getText().trim();
+                String jobType = jobTypeComboBox.getSelectedItem().toString();
+                double minSalary = Double.parseDouble(minSalaryField.getText().trim());
+                double maxSalary = Double.parseDouble(maxSalaryField.getText().trim());
+                String jobDesc = jobDescField.getText().trim();
+                String jobLocation = jobLocationField.getText().trim();
+                String jobMode = jobModeComboBox.getSelectedItem().toString();
+
+                // Optional: basic validation
+                if (jobTitle.isEmpty() || jobDesc.isEmpty() || jobLocation.isEmpty()) {
+                    JOptionPane.showMessageDialog(frame, "Please fill in all required fields.", "Missing Data",
+                            JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
+
+                boolean success = new UserDAO().addJobPost(
+                        userID, jobTitle, jobType,
+                        minSalary, maxSalary, jobDesc,
+                        jobLocation, jobMode);
+
+                if (success) {
+                    JOptionPane.showMessageDialog(frame, "Job Post Added Successfully!");
+                    showJobPostsScreen(); // refresh the job post list
+                } else {
+                    JOptionPane.showMessageDialog(frame, "Failed to add job post.", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(frame, "Invalid salary input. Please enter numeric values.", "Error",
+                        JOptionPane.ERROR_MESSAGE);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(frame, "Unexpected error occurred.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
         formPanel.add(saveButton, gbc);
 
         rightPanel.add(formPanel, BorderLayout.CENTER);

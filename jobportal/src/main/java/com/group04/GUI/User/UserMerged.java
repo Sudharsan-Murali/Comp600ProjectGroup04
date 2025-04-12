@@ -4,9 +4,9 @@ import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.*;
 
-import com.group04.GUI.User.Components.BaseScreen;
-import com.group04.GUI.User.Components.UIConstants;
-import com.group04.GUI.User.Components.UIUtils;
+import com.group04.GUI.Components.BaseScreen;
+import com.group04.GUI.Components.UIConstants;
+import com.group04.GUI.Components.UIUtils;
 
 import java.awt.*;
 import java.awt.event.*;

@@ -1,12 +1,13 @@
 package com.group04.GUI.User;
 
 import javax.swing.*;
+
+import com.group04.GUI.Components.BaseScreen;
+import com.group04.GUI.Components.ButtonFactory;
+import com.group04.GUI.Components.UIUtils;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
-
-import com.group04.GUI.User.Components.UIUtils;
-import com.group04.GUI.User.Components.BaseScreen;
-import com.group04.GUI.User.Components.ButtonFactory;
 
 public class JobSearchScreen extends BaseScreen {
 

@@ -17,8 +17,8 @@ import java.sql.SQLException;
 import com.group04.DAO.User;
 import com.group04.DAO.UserDAO;
 import com.group04.GUI.JobPortalApplication; // Launches the login screen
-import com.group04.GUI.User.Components.BaseScreen;
-import com.group04.GUI.User.Components.ButtonFactory;
+import com.group04.GUI.Components.BaseScreen;
+import com.group04.GUI.Components.ButtonFactory;
 
 public class UserProfileScreen extends BaseScreen {
 
