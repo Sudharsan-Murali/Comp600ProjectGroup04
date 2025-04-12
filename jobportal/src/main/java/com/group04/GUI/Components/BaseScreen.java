@@ -1,4 +1,4 @@
-package com.group04.GUI.User.Components;
+package com.group04.GUI.Components;
 
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;

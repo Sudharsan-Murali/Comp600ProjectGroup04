@@ -4,9 +4,12 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+public class UserDAO {
 public class UserDAO {
 
     private static final String URL = "jdbc:mysql://localhost:3306/job_portal";
@@ -201,6 +204,11 @@ public class UserDAO {
                 "FROM Users u " +
                 "LEFT JOIN Company c ON u.Company_ID = c.Company_ID " +
                 "WHERE u.Email = ?";
+                "u.Security_Que, u.Security_Ans, c.Company_name, u.Job_role, u.Skill_1, u.Skill_2, u.Skill_3, " +
+                "u.Skill_4, u.LinkedIN_url, u.Availability, u.Resume_default " +
+                "FROM Users u " +
+                "LEFT JOIN Company c ON u.Company_ID = c.Company_ID " +
+                "WHERE u.Email = ?";
         User user = null;
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setString(1, email);
@@ -220,7 +228,7 @@ public class UserDAO {
                 // Instead of Company_ID, set the company name.
                 user.setCompany(rs.getString("Company_name"));
                 user.setJobRole(rs.getString("Job_role"));
-                // Combine Skill_1..Skill_4 into one string for preferences.
+                // Combine Skill_1..Skill_4 into one string preferences.
                 String skill1 = rs.getString("Skill_1");
                 String skill2 = rs.getString("Skill_2");
                 String skill3 = rs.getString("Skill_3");
@@ -262,6 +270,7 @@ public class UserDAO {
         return user;
     }
 
+
     public int getCompanyIdByName(String companyName) {
         String query = "SELECT Company_ID FROM Company WHERE Company_name = ?";
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
@@ -275,11 +284,15 @@ public class UserDAO {
         }
         return -1; // Return -1 if company not found. You can handle this as an error.
     }
+    }
 
     // ✅ Update user profile
     public boolean updateUserProfile(User user) {
         // Updated query to include extra fields.
         String query = "UPDATE Users SET First_name = ?, Last_name = ?, Mobile = ?, Dob = ?, Password = ?, " +
+                "Security_Que = ?, Security_Ans = ?, Company_ID = ?, Job_role = ?, LinkedIN_url = ?, Availability = ? "
+                +
+                "WHERE Email = ?";
                 "Security_Que = ?, Security_Ans = ?, Company_ID = ?, Job_role = ?, LinkedIN_url = ?, Availability = ? "
                 +
                 "WHERE Email = ?";
@@ -293,10 +306,12 @@ public class UserDAO {
             stmt.setString(7, user.getSecurityAnswer());
             int companyId = getCompanyIdByName(user.getCompany());
             if (companyId == -1) {
+            if (companyId == -1) {
                 // Handle error, for example:
                 System.err.println("Company not found for: " + user.getCompany());
                 return false;
             }
+            stmt.setInt(8, companyId);
             stmt.setInt(8, companyId);
             stmt.setString(9, user.getJobRole());
             stmt.setString(10, user.getLinkedInUrl());
@@ -308,6 +323,7 @@ public class UserDAO {
             return false;
         }
     }
+
 
     /*
      * USER SECTION
@@ -350,6 +366,8 @@ public class UserDAO {
             e.printStackTrace();
             return false;
         }
+    }
+
     }
 
     public byte[] getUserResume(String email) {

@@ -5,16 +5,16 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableColumnModel;
 import java.awt.*;
-import java.awt.event.*;
 import java.io.File;
+import java.sql.Date;
+import java.time.LocalDate;
 import java.util.Map;
 
+import java.util.List;
 import com.group04.DAO.UserDAO;
-import com.group04.GUI.JobPortalApplication; // For handling the logout action
-import com.group04.GUI.User.Components.UIUtils;
-import com.group04.GUI.User.Components.ButtonFactory;
-import com.group04.GUI.User.Components.SidePanel;
-import com.group04.GUI.User.Components.UIConstants;
+import com.group04.GUI.Components.ButtonEditor;
+import com.group04.GUI.Components.ButtonFactory;
+import com.group04.GUI.Components.ButtonRenderer;
 
 public class RecruiterProfileScreen {
 
@@ -35,11 +35,26 @@ public class RecruiterProfileScreen {
     private JTextField companyLinkedInField;
     private JTextField companyWebsiteField;
 
+    // ADD JOB POST SCREEN
+    private JTextField jobIdField;
+    private JTextField jobTitleField;
+    private JTextField minSalaryField;
+    private JTextField maxSalaryField;
+    private JTextArea jobDescField;
+    private JTextField jobLocationField;
+    private JComboBox<String> jobTypeComboBox;
+
+    private int userID;
+    private int companyId;
+
     public RecruiterProfileScreen(String email) {
         this.recruiterEmail = email;
 
         UserDAO userDAO = new UserDAO();
         this.recruiterData = userDAO.getRecruiterInfoByEmail(recruiterEmail);
+        userID = userDAO.getUserIdByEmail(recruiterEmail);
+        companyId = userDAO.getCompanyIdByEmail(recruiterEmail); // You’ll implement this method
+
     }
 
     public void createAndShowGUI() {
@@ -385,7 +400,7 @@ public class RecruiterProfileScreen {
         rightPanel.setLayout(new BorderLayout());
         rightPanel.setBackground(Color.WHITE);
 
-        // Create a header panel combining a left-aligned title and the "ADD" button
+        // 1. Add Header (with ADD button)
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setBackground(Color.WHITE);
         JLabel titleLabel = new JLabel("Job Posts");
@@ -394,7 +409,6 @@ public class RecruiterProfileScreen {
         headerPanel.add(titleLabel, BorderLayout.WEST);
 
         JButton addJobButton = new JButton("ADD");
-        // Add an ActionListener to redirect to the Add Job Post screen when clicked.
         addJobButton.addActionListener(e -> showAddJobPostsScreen());
 
         JPanel addButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -402,68 +416,54 @@ public class RecruiterProfileScreen {
         addButtonPanel.add(addJobButton);
         headerPanel.add(addButtonPanel, BorderLayout.EAST);
 
-        // Job Table: styling similar to the Applications screen
-        String[] columnNames = { "S.NO", "JOB TITLE", "DATE POSTED", "NUMBER", "STATUS", "EDIT", "DELETE", "DUE DATE" };
-        Object[][] data = new Object[10][8]; // Placeholder data
-        JTable jobTable = new JTable(data, columnNames);
-        jobTable.setRowHeight(30);
-        jobTable.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        jobTable.setGridColor(new Color(189, 195, 199));
-        jobTable.setShowGrid(true);
-        jobTable.setIntercellSpacing(new Dimension(5, 5));
-        jobTable.setBackground(Color.WHITE);
-
-        // Style the table header
-        JTableHeader header = jobTable.getTableHeader();
-        header.setPreferredSize(new Dimension(header.getPreferredSize().width, 35));
-        header.setFont(new Font("SansSerif", Font.BOLD, 16));
-        header.setBackground(new Color(52, 73, 94));
-        header.setForeground(Color.WHITE);
-
-        // Set proper column widths
-        TableColumnModel columnModel = jobTable.getColumnModel();
-        columnModel.getColumn(0).setPreferredWidth(50);
-        columnModel.getColumn(1).setPreferredWidth(70);
-        columnModel.getColumn(2).setPreferredWidth(120);
-        columnModel.getColumn(3).setPreferredWidth(150);
-        columnModel.getColumn(4).setPreferredWidth(100);
-        columnModel.getColumn(5).setPreferredWidth(80);
-        columnModel.getColumn(6).setPreferredWidth(80);
-        columnModel.getColumn(7).setPreferredWidth(50);
-
-        // Extend columns to fill available width.
-        jobTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-
-        JScrollPane tableScrollPane = new JScrollPane(jobTable);
-        tableScrollPane.getViewport().setBackground(Color.WHITE);
-
-        // Footer for pagination
-        JPanel footerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        footerPanel.setBackground(Color.WHITE);
-        JButton prevButton = new JButton("<");
-        JButton nextButton = new JButton(">");
-        pageLabel = new JLabel("Page " + currentPage);
-        prevButton.addActionListener(e -> {
-            if (currentPage > 1) {
-                currentPage--;
-                updatePageLabel();
-            }
-        });
-        nextButton.addActionListener(e -> {
-            currentPage++;
-            updatePageLabel();
-        });
-        footerPanel.add(prevButton);
-        footerPanel.add(pageLabel);
-        footerPanel.add(nextButton);
-
         rightPanel.add(headerPanel, BorderLayout.NORTH);
-        rightPanel.add(tableScrollPane, BorderLayout.CENTER);
-        rightPanel.add(footerPanel, BorderLayout.SOUTH);
+
+        // 2. Get job posts
+        List<Map<String, Object>> jobPosts = new UserDAO().getJobPostsByUserId(userID);
+
+        if (jobPosts.isEmpty()) {
+            JLabel noDataLabel = new JLabel("No Data Found", JLabel.CENTER);
+            noDataLabel.setFont(new Font("SansSerif", Font.BOLD, 22));
+            noDataLabel.setForeground(Color.GRAY);
+            rightPanel.add(noDataLabel, BorderLayout.CENTER);
+        } else {
+            // 3. Display job posts in table
+            String[] columnNames = { "S.NO", "JOB TITLE", "DATE POSTED", "LOCATION", "EDIT", "DELETE" };
+            Object[][] data = new Object[jobPosts.size()][6];
+
+            for (int i = 0; i < jobPosts.size(); i++) {
+                Map<String, Object> row = jobPosts.get(i);
+                data[i][0] = i + 1;
+                data[i][1] = row.get("Job_Title");
+                data[i][2] = row.get("Date_Of_Application");
+                data[i][3] = row.get("Job_location");
+                data[i][4] = "Edit";
+                data[i][5] = "Delete";
+            }
+
+            JTable jobTable = new JTable(data, columnNames);
+            jobTable.setRowHeight(30);
+            jobTable.setFont(new Font("SansSerif", Font.PLAIN, 14));
+            jobTable.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 16));
+
+            jobTable.getColumnModel().getColumn(4).setCellRenderer(new ButtonRenderer("Edit"));
+            jobTable.getColumnModel().getColumn(4).setCellEditor(new ButtonEditor("Edit", jobTable, row -> {
+                System.out.println("Edit clicked for row " + row);
+            }));
+
+            jobTable.getColumnModel().getColumn(5).setCellRenderer(new ButtonRenderer("Delete"));
+            jobTable.getColumnModel().getColumn(5).setCellEditor(new ButtonEditor("Delete", jobTable, row -> {
+                System.out.println("Delete clicked for row " + row);
+            }));
+
+            JScrollPane scrollPane = new JScrollPane(jobTable);
+            rightPanel.add(scrollPane, BorderLayout.CENTER);
+        }
 
         rightPanel.revalidate();
         rightPanel.repaint();
     }
+
     // ----------------------------
 
     // Uniform Add Job Posts Screen
@@ -487,82 +487,97 @@ public class RecruiterProfileScreen {
         // JOB ID field
         gbc.gridx = 0;
         gbc.gridy = 1;
-        JLabel jobIdLabel = new JLabel("<html>JOB ID <font color='black'>:</font> <font color='red'>*</font></html>");
+        JLabel jobIdLabel = new JLabel("<html>Job ID <font color='black'>:</font> <font color='red'>*</font></html>");
         jobIdLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
         formPanel.add(jobIdLabel, gbc);
+        // gbc.gridx = 1;
+        // formPanel.add(new JTextField(15), gbc);
         gbc.gridx = 1;
-        formPanel.add(new JTextField(15), gbc);
+        jobIdField = new JTextField(15);
+        jobIdField.setEditable(false); // Disable editing
+        jobIdField.setBackground(new Color(230, 230, 230)); // Optional: greyed out background
+
+        int generatedId = new UserDAO().getNextGlobalJobId();
+        String genJobID = "JID0" + String.valueOf(generatedId);
+        jobIdField.setText(genJobID);
+
+        formPanel.add(jobIdField, gbc);
 
         // JOB TITLE field
         gbc.gridx = 0;
         gbc.gridy = 2;
         JLabel jobTitleLabel = new JLabel(
-                "<html>JOB TITLE <font color='black'>:</font> <font color='red'>*</font></html>");
+                "<html>Job Title <font color='black'>:</font> <font color='red'>*</font></html>");
         jobTitleLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
         formPanel.add(jobTitleLabel, gbc);
         gbc.gridx = 1;
-        formPanel.add(new JTextField(15), gbc);
+        jobTitleField = new JTextField(15);
+        formPanel.add(jobTitleField, gbc);
 
         // JOB TYPE field
         gbc.gridx = 0;
         gbc.gridy = 3;
         JLabel jobTypeLabel = new JLabel(
-                "<html>JOB TYPE <font color='black'>:</font> <font color='red'>*</font></html>");
+                "<html>Job Type <font color='black'>:</font> <font color='red'>*</font></html>");
         jobTypeLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
         formPanel.add(jobTypeLabel, gbc);
         gbc.gridx = 1;
-        formPanel.add(new JTextField(15), gbc);
+        jobTypeComboBox = new JComboBox<>(new String[] { "Onsite", "Remote", "Hybrid" });
+        formPanel.add(jobTypeComboBox, gbc);
 
         // SALARY RANGE field
         gbc.gridx = 0;
         gbc.gridy = 4;
         JLabel salaryRangeLabel = new JLabel(
-                "<html>SALARY RANGE <font color='black'>:</font> <font color='red'>*</font></html>");
+                "<html>Salary Range <font color='black'>:</font> <font color='red'>*</font></html>");
         salaryRangeLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
         formPanel.add(salaryRangeLabel, gbc);
         gbc.gridx = 1;
-        JTextField minSalaryField = new JTextField(7);
+        minSalaryField = new JTextField(7);
         formPanel.add(minSalaryField, gbc);
         gbc.gridx = 2;
         // "TO:" separator without required marker
-        formPanel.add(new JLabel("<html>TO <font color='black'>:</font> <font color='red'>*</font></html>"), gbc);
+        formPanel.add(new JLabel("<html>To <font color='black'>:</font> <font color='red'>*</font></html>"), gbc);
         gbc.gridx = 3;
-        JTextField maxSalaryField = new JTextField(7);
+        maxSalaryField = new JTextField(7);
         formPanel.add(maxSalaryField, gbc);
 
         // JOB DESCRIPTION field
         gbc.gridx = 0;
         gbc.gridy = 5;
         JLabel jobDescLabel = new JLabel(
-                "<html>JOB DESCRIPTION <font color='black'>:</font> <font color='red'>*</font></html>");
+                "<html>Job Description <font color='black'>:</font> <font color='red'>*</font></html>");
         jobDescLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
         formPanel.add(jobDescLabel, gbc);
         gbc.gridx = 1;
         gbc.gridwidth = 3;
         gbc.fill = GridBagConstraints.BOTH;
-        JTextArea jobDescField = new JTextArea(4, 30);
+        jobDescField = new JTextArea(4, 30);
         formPanel.add(new JScrollPane(jobDescField), gbc);
         gbc.gridwidth = 1; // Reset gridwidth and fill
 
-        // JOB LOCATION field
+        // REQUIRED EXPERIENCE field
         gbc.gridx = 0;
         gbc.gridy = 6;
+        JLabel experienceLabel = new JLabel(
+                "<html>Required Experience <font color='black'>:</font> <font color='red'>*</font></html>");
+        experienceLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
+        formPanel.add(experienceLabel, gbc);
+
+        gbc.gridx = 1;
+        JTextField experienceField = new JTextField(15); // Store this as a class-level variable if needed
+        formPanel.add(experienceField, gbc);
+
+        // JOB LOCATION field
+        gbc.gridx = 0;
+        gbc.gridy = 7;
         JLabel jobLocationLabel = new JLabel(
-                "<html>JOB LOCATION <font color='black'>:</font> <font color='red'>*</font></html>");
+                "<html>Job Location <font color='black'>:</font> <font color='red'>*</font></html>");
         jobLocationLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
         formPanel.add(jobLocationLabel, gbc);
         gbc.gridx = 1;
-        formPanel.add(new JTextField(15), gbc);
-
-        // JOB MODE field
-        gbc.gridx = 0;
-        gbc.gridy = 7;
-        JLabel jobModeLabel = new JLabel(
-                "<html>JOB MODE <font color='black'>:</font> <font color='red'>*</font></html>");
-        jobModeLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
-        formPanel.add(jobModeLabel, gbc);
-        gbc.gridx = 1;
-        formPanel.add(new JTextField(15), gbc);
+        jobLocationField = new JTextField(15);
+        formPanel.add(jobLocationField, gbc);
 
         // Save Button Section
         gbc.gridx = 1;
@@ -571,6 +586,55 @@ public class RecruiterProfileScreen {
         gbc.anchor = GridBagConstraints.CENTER;
         JButton saveButton = new JButton("SAVE");
         saveButton.setPreferredSize(new Dimension(100, 30));
+
+        saveButton.addActionListener(e -> {
+            try {
+                String jobTitle = jobTitleField.getText().trim();
+
+                String selectedType = jobTypeComboBox.getSelectedItem().toString();
+                int jobTypeId = switch (selectedType) {
+                    case "Onsite" -> 1;
+                    case "Remote" -> 2;
+                    case "Hybrid" -> 3;
+                    default -> 0; // or throw error
+                };
+
+                double minSalary = Double.parseDouble(minSalaryField.getText().trim());
+                double maxSalary = Double.parseDouble(maxSalaryField.getText().trim());
+                String jobDesc = jobDescField.getText().trim();
+                String jobLocation = jobLocationField.getText().trim();
+
+                // Optional: basic validation
+                if (jobTitle.isEmpty() || jobDesc.isEmpty() || jobLocation.isEmpty()) {
+                    JOptionPane.showMessageDialog(frame, "Please fill in all required fields.", "Missing Data",
+                            JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
+                String requiredExperience = experienceField.getText().trim();
+                Date dateOfApplication = Date.valueOf(LocalDate.now());
+
+                boolean success = new UserDAO().addJobPost(
+                        userID, companyId, jobTitle, jobTypeId,
+                        minSalary, maxSalary, jobDesc,
+                        jobLocation, requiredExperience, dateOfApplication);
+
+                if (success) {
+                    JOptionPane.showMessageDialog(frame, "Job Post Added Successfully!");
+                    showJobPostsScreen(); // refresh the job post list and reloads table dynamically
+                } else {
+                    JOptionPane.showMessageDialog(frame, "Failed to add job post.", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(frame, "Invalid salary input. Please enter numeric values.", "Error",
+                        JOptionPane.ERROR_MESSAGE);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(frame, "Unexpected error occurred.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
         formPanel.add(saveButton, gbc);
 
         rightPanel.add(formPanel, BorderLayout.CENTER);
