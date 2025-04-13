@@ -602,11 +602,17 @@ public class UserDAO {
         return -1;
     }
 
-    public List<Map<String, Object>> getJobPostsByUserId(int userId) {
+    public List<Map<String, Object>> getJobPostsByUserId(int userId, int page, int pageSize) {
         List<Map<String, Object>> jobPosts = new ArrayList<>();
-        String sql = "SELECT Job_ID, Job_Title, Date_Of_Application, Job_Type, Job_location FROM recruiters_applications WHERE user_ID = ?";
+        int offset = (page - 1) * pageSize;
+        String sql = "SELECT Job_ID, Job_Title, Date_Of_Application, Job_Type, Job_location " +
+                     "FROM recruiters_applications WHERE user_ID = ? " +
+                     "ORDER BY Date_Of_Application DESC " +
+                     "LIMIT ? OFFSET ?";
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, userId);
+            stmt.setInt(2, pageSize);
+            stmt.setInt(3, offset);
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
                 Map<String, Object> row = new HashMap<>();
@@ -617,12 +623,24 @@ public class UserDAO {
                 row.put("Job_location", rs.getString("Job_location"));
                 jobPosts.add(row);
             }
-
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
         return jobPosts;
+    }
+    
+    public int countJobPostsByUserId(int userId) {
+        String sql = "SELECT COUNT(*) AS total FROM recruiters_applications WHERE user_ID = ?";
+        try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, userId);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt("total");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
     }
 
     /*

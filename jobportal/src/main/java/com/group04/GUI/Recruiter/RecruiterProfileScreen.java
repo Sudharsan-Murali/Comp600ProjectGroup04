@@ -30,6 +30,8 @@ public class RecruiterProfileScreen {
     private int currentPage = 1;
     private boolean isEditMode = false;
     private int editingJobId = -1; // We'll use this to pass the actual DB Job_ID
+    private final int pageSize = 20;    
+    private int totalPages = 1;
 
     private String recruiterEmail;
     private Map<String, String> recruiterData;
@@ -148,7 +150,10 @@ public class RecruiterProfileScreen {
 
         // Set action listeners for navigation buttons
         profileButton.addActionListener(e -> showProfileScreen());
-        jobpostsButton.addActionListener(e -> showJobPostsScreen());
+        jobpostsButton.addActionListener(e -> {
+            currentPage = 1; // <-- This resets to the first page
+            showJobPostsScreen(); // <-- Then shows the Job Posts
+        });
         addjobpostsButton.addActionListener(e -> showAddJobPostsScreen());
         applicationButton.addActionListener(e -> showApplicationScreen());
         logoutButton.addActionListener(e -> {
@@ -272,37 +277,6 @@ public class RecruiterProfileScreen {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5); // Smaller insets for reduced spacing
         gbc.fill = GridBagConstraints.HORIZONTAL;
-
-        // String[] labels = {
-        // "First Name",
-        // "Last Name",
-        // "Email",
-        // "Company Name",
-        // "Company Address",
-        // "Company Phone",
-        // "Company LinkedIn",
-        // "Company Website"
-        // };
-
-        // for (int i = 0; i < labels.length; i++) {
-        // // Create label with colon in black and a red asterisk
-        // JLabel label = new JLabel(
-        // "<html>" + labels[i] + " <font color='black'>:</font> <font
-        // color='red'>*</font></html>");
-        // label.setFont(new Font("SansSerif", Font.BOLD, 16));
-
-        // // Create text field with increased size and font
-        // JTextField textField = new JTextField(25);
-        // textField.setFont(new Font("SansSerif", Font.PLAIN, 16));
-        // textField.setPreferredSize(new Dimension(250, 30));
-
-        // gbc.gridx = 0;
-        // gbc.gridy = i;
-        // formPanel.add(label, gbc); // Label on left
-
-        // gbc.gridx = 1;
-        // formPanel.add(textField, gbc); // Text field on right
-        // }
 
         String[] labels = {
                 "First Name", "Last Name", "Email", "Company Name",
@@ -440,139 +414,177 @@ public class RecruiterProfileScreen {
         gbc.gridx = col * 2 + 1;
         panel.add(textField, gbc);
     }
-
-    // ----------------------------
-    // Uniform Job Posts Screen
-    private void showJobPostsScreen() {
-        rightPanel.removeAll();
-        rightPanel.setLayout(new BorderLayout());
-        rightPanel.setBackground(Color.WHITE);
-
-        ImageIcon editIcon = null;
-        ImageIcon deleteIcon = null;
-
-        try {
-            editIcon = loadScaledIcon("/icons/edit.png", 20, 20);
-            deleteIcon = loadScaledIcon("/icons/delete.png", 20, 20);
-        } catch (Exception e) {
-            System.err.println("Icon load failed: " + e.getMessage());
-        }
-
-        // 1. Add Header (with ADD button)
-        JPanel headerPanel = new JPanel(new BorderLayout());
-        headerPanel.setBackground(Color.WHITE);
-        JLabel titleLabel = new JLabel("Job Posts");
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
-        titleLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        headerPanel.add(titleLabel, BorderLayout.WEST);
-
-        JButton addJobButton = new JButton("ADD");
-        addJobButton.addActionListener(e -> showAddJobPostsScreen());
-
-        JPanel addButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        addButtonPanel.setBackground(Color.WHITE);
-        addButtonPanel.add(addJobButton);
-        headerPanel.add(addButtonPanel, BorderLayout.EAST);
-
-        rightPanel.add(headerPanel, BorderLayout.NORTH);
-
         // 2. Get job posts
-        List<Map<String, Object>> jobPosts = new UserDAO().getJobPostsByUserId(userID);
-
-        if (jobPosts.isEmpty()) {
-            JLabel noDataLabel = new JLabel("No Data Found", JLabel.CENTER);
-            noDataLabel.setFont(new Font("SansSerif", Font.BOLD, 22));
-            noDataLabel.setForeground(Color.GRAY);
-            rightPanel.add(noDataLabel, BorderLayout.CENTER);
-        } else {
-            // 3. Display job posts in table
-            String[] columnNames = { "S.NO", "JOB ID", "JOB TITLE", "DATE POSTED", "LOCATION", "EDIT", "DELETE" };
-            Object[][] data = new Object[jobPosts.size()][7];
-
-            for (int i = 0; i < jobPosts.size(); i++) {
-                Map<String, Object> row = jobPosts.get(i);
-                data[i][0] = i + 1;
-                data[i][1] = row.get("Job_ID");
-                data[i][2] = row.get("Job_Title");
-                data[i][3] = row.get("Date_Of_Application");
-                data[i][4] = row.get("Job_location");
-                data[i][5] = "";
-                data[i][6] = "";
+        private void showJobPostsScreen() {
+        
+            rightPanel.removeAll();
+            rightPanel.setLayout(new BorderLayout());
+            rightPanel.setBackground(Color.WHITE);
+    
+            UserDAO dao = new UserDAO();
+    int totalJobs = dao.countJobPostsByUserId(userID);
+    totalPages = (int) Math.ceil((double) totalJobs / pageSize);
+    
+            ImageIcon editIcon = null;
+            ImageIcon deleteIcon = null;
+    
+            try {
+                editIcon = loadScaledIcon("/icons/edit.png", 20, 20);
+                deleteIcon = loadScaledIcon("/icons/delete.png", 20, 20);
+            } catch (Exception e) {
+                System.err.println("Icon load failed: " + e.getMessage());
             }
-
-            JTable jobTable = new JTable(data, columnNames) {
-                @Override
-                public boolean isCellEditable(int row, int column) {
-                    // Only allow edit/delete columns to be editable
-                    return column == 5 || column == 6;
+    
+            // 1. Add Header (with ADD button)
+            JPanel headerPanel = new JPanel(new BorderLayout());
+            headerPanel.setBackground(Color.WHITE);
+            JLabel titleLabel = new JLabel("Job Posts");
+            titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
+            titleLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+            headerPanel.add(titleLabel, BorderLayout.WEST);
+    
+            JButton addJobButton = new JButton("ADD");
+            addJobButton.addActionListener(e -> showAddJobPostsScreen());
+    
+            JPanel addButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+            addButtonPanel.setBackground(Color.WHITE);
+            addButtonPanel.add(addJobButton);
+            headerPanel.add(addButtonPanel, BorderLayout.EAST);
+    
+            rightPanel.add(headerPanel, BorderLayout.NORTH);
+    
+            // 2. Get job posts
+            List<Map<String, Object>> jobPosts = dao.getJobPostsByUserId(userID, currentPage, pageSize);
+    
+            if (jobPosts.isEmpty()) {
+                JLabel noDataLabel = new JLabel("No Data Found", JLabel.CENTER);
+                noDataLabel.setFont(new Font("SansSerif", Font.BOLD, 22));
+                noDataLabel.setForeground(Color.GRAY);
+                rightPanel.add(noDataLabel, BorderLayout.CENTER);
+            } else {
+                // 3. Display job posts in table
+                String[] columnNames = { "S.NO", "JOB ID", "JOB TITLE", "DATE POSTED", "LOCATION", "EDIT", "DELETE" };
+                Object[][] data = new Object[jobPosts.size()][7];
+    
+                for (int i = 0; i < jobPosts.size(); i++) {
+                    Map<String, Object> row = jobPosts.get(i);
+                    data[i][0] = i + 1;
+                    data[i][1] = row.get("Job_ID");
+                    data[i][2] = row.get("Job_Title");
+                    data[i][3] = row.get("Date_Of_Application");
+                    data[i][4] = row.get("Job_location");
+                    data[i][5] = "";
+                    data[i][6] = "";
                 }
-
-                @Override
-                public Class<?> getColumnClass(int column) {
-                    return getValueAt(0, column) != null ? getValueAt(0, column).getClass() : Object.class;
-                }
-            };
-
-            jobTable.setRowHeight(30);
-            jobTable.setFont(new Font("SansSerif", Font.PLAIN, 14));
-            jobTable.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 16));
-
-            jobTable.getColumnModel().getColumn(5).setCellRenderer(new ButtonRenderer(editIcon));
-            jobTable.getColumnModel().getColumn(5).setCellEditor(new ButtonEditor(editIcon, jobTable, row -> {
-                Map<String, Object> selectedJob = jobPosts.get(row);
-                showAddJobPostsScreen(selectedJob);
-            }));
-
-            jobTable.getColumnModel().getColumn(6).setCellRenderer(new ButtonRenderer(deleteIcon));
-            // jobTable.getColumnModel().getColumn(5).setCellEditor(new
-            // ButtonEditor(deleteIcon, jobTable, row -> {
-            // System.out.println("Delete clicked for row " + row);
-            // }));
-            jobTable.getColumnModel().getColumn(6).setCellEditor(new ButtonEditor(deleteIcon, jobTable, row -> {
-                int confirm = JOptionPane.showConfirmDialog(frame, "Are you sure you want to delete this job post?",
-                        "Confirm Deletion", JOptionPane.YES_NO_OPTION);
-                if (confirm == JOptionPane.YES_OPTION) {
-                    Object jobIdObj = jobTable.getValueAt(row, 1); // Get Job_ID from hidden column
-                    int jobId = Integer.parseInt(jobIdObj.toString());
-
-                    UserDAO dao = new UserDAO();
-                    boolean deleted = dao.deleteJobPostById(jobId, userID);
-
-                    if (deleted) {
-                        JOptionPane.showMessageDialog(frame, "Job post deleted successfully.");
-                        showJobPostsScreen(); // Refresh table
-                    } else {
-                        JOptionPane.showMessageDialog(frame, "Failed to delete job post.", "Error",
-                                JOptionPane.ERROR_MESSAGE);
+    
+                JTable jobTable = new JTable(data, columnNames) {
+                    @Override
+                    public boolean isCellEditable(int row, int column) {
+                        // Only allow edit/delete columns to be editable
+                        return column == 5 || column == 6;
                     }
-                }
-            }));
-
-            jobTable.setCellSelectionEnabled(true);
-            jobTable.addMouseListener(new MouseAdapter() {
-                @Override
-                public void mousePressed(MouseEvent e) {
-                    Point point = e.getPoint();
-                    int row = jobTable.rowAtPoint(point);
-                    int column = jobTable.columnAtPoint(point);
-
-                    if (row >= 0 && column >= 0 && jobTable.isCellEditable(row, column)) {
-                        jobTable.editCellAt(row, column);
-                        Component editor = jobTable.getEditorComponent();
-                        if (editor != null) {
-                            editor.requestFocus();
+    
+                    @Override
+                    public Class<?> getColumnClass(int column) {
+                        return getValueAt(0, column) != null ? getValueAt(0, column).getClass() : Object.class;
+                    }
+                };
+    
+                jobTable.setRowHeight(30);
+                jobTable.setFont(new Font("SansSerif", Font.PLAIN, 14));
+                jobTable.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 16));
+    
+                jobTable.getColumnModel().getColumn(5).setCellRenderer(new ButtonRenderer(editIcon));
+                jobTable.getColumnModel().getColumn(5).setCellEditor(new ButtonEditor(editIcon, jobTable, row -> {
+                    Map<String, Object> selectedJob = jobPosts.get(row);
+                    showAddJobPostsScreen(selectedJob);
+                }));
+    
+                jobTable.getColumnModel().getColumn(6).setCellRenderer(new ButtonRenderer(deleteIcon));
+                // jobTable.getColumnModel().getColumn(5).setCellEditor(new
+                // ButtonEditor(deleteIcon, jobTable, row -> {
+                // System.out.println("Delete clicked for row " + row);
+                // }));
+                jobTable.getColumnModel().getColumn(6).setCellEditor(new ButtonEditor(deleteIcon, jobTable, row -> {
+                    int confirm = JOptionPane.showConfirmDialog(frame, "Are you sure you want to delete this job post?",
+                            "Confirm Deletion", JOptionPane.YES_NO_OPTION);
+                    if (confirm == JOptionPane.YES_OPTION) {
+                        Object jobIdObj = jobTable.getValueAt(row, 1); // Get Job_ID from hidden column
+                        int jobId = Integer.parseInt(jobIdObj.toString());
+    
+                       // UserDAO dao = new UserDAO();
+                        boolean deleted = dao.deleteJobPostById(jobId, userID);
+    
+                        if (deleted) {
+                            JOptionPane.showMessageDialog(frame, "Job post deleted successfully.");
+                            showJobPostsScreen(); // Refresh table
+                        } else {
+                            JOptionPane.showMessageDialog(frame, "Failed to delete job post.", "Error",
+                                    JOptionPane.ERROR_MESSAGE);
                         }
                     }
-                }
-            });
-
-            JScrollPane scrollPane = new JScrollPane(jobTable);
-            rightPanel.add(scrollPane, BorderLayout.CENTER);
+                }));
+    
+                jobTable.setCellSelectionEnabled(true);
+                jobTable.addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mousePressed(MouseEvent e) {
+                        Point point = e.getPoint();
+                        int row = jobTable.rowAtPoint(point);
+                        int column = jobTable.columnAtPoint(point);
+    
+                        if (row >= 0 && column >= 0 && jobTable.isCellEditable(row, column)) {
+                            jobTable.editCellAt(row, column);
+                            Component editor = jobTable.getEditorComponent();
+                            if (editor != null) {
+                                editor.requestFocus();
+                            }
+                        }
+                    }
+                });
+    
+                JPanel paginationPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+                JButton prevButton = new JButton("<");
+                JButton nextButton = new JButton(">");
+                pageLabel = new JLabel("Page " + currentPage + " of " + totalPages);
+    
+                updatePaginationButtons(prevButton, nextButton);
+    
+    
+            prevButton.addActionListener(e -> {
+            if (currentPage > 1) {
+            currentPage--;
+            showJobPostsScreen(); // reloads data for previous page
         }
-
-        rightPanel.revalidate();
-        rightPanel.repaint();
-    }
+    });
+    
+    nextButton.addActionListener(e -> {
+        if (currentPage < totalPages) {
+            currentPage++;
+            showJobPostsScreen(); // reloads data for next page
+        }
+    });
+    JScrollPane scrollPane = new JScrollPane(jobTable);
+    paginationPanel.add(prevButton);
+    paginationPanel.add(pageLabel);
+    paginationPanel.add(nextButton);
+    
+    
+    rightPanel.add(scrollPane, BorderLayout.CENTER);
+    rightPanel.add(paginationPanel, BorderLayout.SOUTH);
+    
+            }
+    
+            rightPanel.revalidate();
+            rightPanel.repaint();
+    
+           
+               }
+    
+               private void updatePaginationButtons(JButton prev, JButton next) {
+                prev.setEnabled(currentPage > 1);
+                next.setEnabled(currentPage < totalPages);
+            }
 
     private ImageIcon loadScaledIcon(String path, int width, int height) {
         try {
@@ -746,6 +758,7 @@ public class RecruiterProfileScreen {
 
                 if (success) {
                     JOptionPane.showMessageDialog(frame, "Job Post Added Successfully!");
+                    currentPage=1;
                     showJobPostsScreen(); // refresh the job post list and reloads table dynamically
                 } else {
                     JOptionPane.showMessageDialog(frame, "Failed to add job post.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -838,11 +851,13 @@ public class RecruiterProfileScreen {
         prevButton.addActionListener(e -> {
             if (currentPage > 1) {
                 currentPage--;
+                showJobPostsScreen();
                 updatePageLabel();
             }
         });
         nextButton.addActionListener(e -> {
             currentPage++;
+            showJobPostsScreen();
             updatePageLabel();
         });
         footerPanel.add(prevButton);
