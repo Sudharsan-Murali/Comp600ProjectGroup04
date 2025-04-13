@@ -1,8 +1,14 @@
 package com.group04.GUI.Admin;
 
+import com.group04.DAO.UserDAO;
+import com.group04.GUI.JobPortalApplication;
+
 import javax.swing.*;
+import javax.swing.table.*;
 import java.awt.*;
-import com.group04.GUI.JobPortalApplication;  // Importing JobPortalApplication for the login screen
+import java.awt.event.*;
+import java.util.List;
+import java.util.Map;
 
 public class AdminDashboard {
     private JFrame frame;
@@ -10,71 +16,238 @@ public class AdminDashboard {
     public void createAndShowGUI() {
         frame = new JFrame("Admin Dashboard");
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        frame.setSize(900, 600);
+        frame.setSize(950, 600);
         frame.setLocationRelativeTo(null);
 
         JPanel mainPanel = new JPanel(new BorderLayout());
 
-        // Header panel (with logout button)
-        JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT)); // Right-aligned panel for the header
-        headerPanel.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
-        
-        // Create Logout Button
+        // Combined header panel with title and logout button
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        JLabel header = new JLabel("Welcome to the Admin Dashboard", JLabel.CENTER);
+        header.setFont(new Font("Arial", Font.BOLD, 22));
+        headerPanel.add(header, BorderLayout.CENTER);
+
         JButton logoutButton = new JButton("Logout");
         logoutButton.setFont(new Font("Arial", Font.PLAIN, 16));
         logoutButton.setPreferredSize(new Dimension(100, 30));
-        
-        // Add ActionListener to the logout button
         logoutButton.addActionListener(e -> {
-            frame.dispose(); // Close the Admin Dashboard
-            // SwingUtilities.invokeLater(() -> new JobPortalApplication()); // Reopen the login screen (assuming JobPortalApplication is the login screen)
+            frame.dispose();
+            SwingUtilities.invokeLater(() -> new JobPortalApplication());
         });
+        headerPanel.add(logoutButton, BorderLayout.EAST);
 
-        // Add the logout button to the header panel
-        headerPanel.add(logoutButton);
-
-        // Add header panel to the main panel
         mainPanel.add(headerPanel, BorderLayout.NORTH);
 
-        // Add main content (Tabbed Pane)
-        JLabel header = new JLabel("Welcome to the Admin Dashboard", JLabel.CENTER);
-        header.setFont(new Font("Arial", Font.BOLD, 22));
-        header.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
-        mainPanel.add(header, BorderLayout.CENTER); // We can use this for any additional content, like title
-
-        // Tabbed Pane for different sections
         JTabbedPane tabs = new JTabbedPane();
         tabs.setFont(new Font("Arial", Font.PLAIN, 16));
-
         tabs.addTab("User Management", createUserManagementPanel());
-        tabs.addTab("Recruiter Management", createRecruiterPanel());
+        tabs.addTab("Recruiter Management", createRecruiterManagementPanel());
         tabs.addTab("System Logs", createLogsPanel());
 
-        mainPanel.add(tabs, BorderLayout.CENTER); // Tabbed sections
-
-        // Set up the frame
+        mainPanel.add(tabs, BorderLayout.CENTER);
         frame.add(mainPanel);
         frame.setVisible(true);
     }
 
-    // Create the User Management Panel
     private JPanel createUserManagementPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.add(new JLabel("User Management Section", JLabel.CENTER), BorderLayout.CENTER);
+        JLabel label = new JLabel("Manage Registered Users", JLabel.CENTER);
+        label.setFont(new Font("Arial", Font.BOLD, 18));
+        label.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        panel.add(label, BorderLayout.NORTH);
+
+        String[] columnNames = {"User ID", "Name", "Email", "Edit", "Delete"};
+        List<Map<String, String>> users = UserDAO.getAllUsers();
+
+        Object[][] data = new Object[users.size()][5];
+        for (int i = 0; i < users.size(); i++) {
+            Map<String, String> user = users.get(i);
+            data[i][0] = user.get("user_id");
+            data[i][1] = user.get("name");
+            data[i][2] = user.get("email");
+            data[i][3] = "Edit";
+            data[i][4] = "Delete";
+        }
+
+        DefaultTableModel model = new DefaultTableModel(data, columnNames) {
+            public boolean isCellEditable(int row, int column) {
+                return column == 3 || column == 4;
+            }
+        };
+
+        JTable table = new JTable(model);
+        table.getColumn("Edit").setCellRenderer(new ButtonRenderer());
+        table.getColumn("Edit").setCellEditor(new ButtonEditor("Edit", row -> {
+            String userID = (String) model.getValueAt(row, 0);
+            String currentEmail = (String) model.getValueAt(row, 2);
+            String newEmail = JOptionPane.showInputDialog(frame, "Update Email for User " + userID, currentEmail);
+            if (newEmail != null && !newEmail.trim().isEmpty()) {
+                if (UserDAO.updateUserEmail(userID, newEmail)) {
+                    model.setValueAt(newEmail, row, 2);
+                    JOptionPane.showMessageDialog(frame, "Email updated successfully.");
+                } else {
+                    JOptionPane.showMessageDialog(frame, "Failed to update email.");
+                }
+            }
+        }));
+
+        table.getColumn("Delete").setCellRenderer(new ButtonRenderer());
+        table.getColumn("Delete").setCellEditor(new ButtonEditor("Delete", row -> {
+            String userID = (String) model.getValueAt(row, 0);
+            int confirm = JOptionPane.showConfirmDialog(frame, "Are you sure you want to delete user " + userID + "?",
+                    "Confirm Delete", JOptionPane.YES_NO_OPTION);
+            if (confirm == JOptionPane.YES_OPTION) {
+                if (UserDAO.deleteUserById(userID)) {
+                    model.removeRow(row);
+                    JOptionPane.showMessageDialog(frame, "User deleted.");
+                } else {
+                    JOptionPane.showMessageDialog(frame, "Failed to delete user.");
+                }
+            }
+        }));
+
+        JScrollPane scrollPane = new JScrollPane(table);
+        panel.add(scrollPane, BorderLayout.CENTER);
         return panel;
     }
 
-    // Create the Recruiter Management Panel
-    private JPanel createRecruiterPanel() {
+    private JPanel createRecruiterManagementPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.add(new JLabel("Recruiter Management Section", JLabel.CENTER), BorderLayout.CENTER);
+        JLabel label = new JLabel("Manage Recruiters", JLabel.CENTER);
+        label.setFont(new Font("Arial", Font.BOLD, 18));
+        label.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        panel.add(label, BorderLayout.NORTH);
+
+        String[] columnNames = {"Recruiter ID", "Name", "Email", "Company", "Edit", "Delete"};
+        List<Map<String, String>> recruiters = UserDAO.getAllRecruiters();
+
+        Object[][] data = new Object[recruiters.size()][6];
+        for (int i = 0; i < recruiters.size(); i++) {
+            Map<String, String> recruiter = recruiters.get(i);
+            data[i][0] = recruiter.get("user_id");
+            data[i][1] = recruiter.get("name");
+            data[i][2] = recruiter.get("email");
+            data[i][3] = recruiter.get("company");
+            data[i][4] = "Edit";
+            data[i][5] = "Delete";
+        }
+
+        DefaultTableModel model = new DefaultTableModel(data, columnNames) {
+            public boolean isCellEditable(int row, int column) {
+                return column == 4 || column == 5;
+            }
+        };
+
+        JTable table = new JTable(model);
+        table.getColumn("Edit").setCellRenderer(new ButtonRenderer());
+        table.getColumn("Edit").setCellEditor(new ButtonEditor("Edit", row -> {
+            String recruiterID = (String) model.getValueAt(row, 0);
+            String currentEmail = (String) model.getValueAt(row, 2);
+            String newEmail = JOptionPane.showInputDialog(frame, "Update Email for Recruiter " + recruiterID, currentEmail);
+            if (newEmail != null && !newEmail.trim().isEmpty()) {
+                if (UserDAO.updateRecruiterEmail(recruiterID, newEmail)) {
+                    model.setValueAt(newEmail, row, 2);
+                    JOptionPane.showMessageDialog(frame, "Email updated successfully.");
+                } else {
+                    JOptionPane.showMessageDialog(frame, "Failed to update email.");
+                }
+            }
+        }));
+
+        table.getColumn("Delete").setCellRenderer(new ButtonRenderer());
+        table.getColumn("Delete").setCellEditor(new ButtonEditor("Delete", row -> {
+            String recruiterID = (String) model.getValueAt(row, 0);
+            int confirm = JOptionPane.showConfirmDialog(frame, "Are you sure you want to delete recruiter " + recruiterID + "?",
+                    "Confirm Delete", JOptionPane.YES_NO_OPTION);
+            if (confirm == JOptionPane.YES_OPTION) {
+                if (UserDAO.deleteRecruiterById(recruiterID)) {
+                    model.removeRow(row);
+                    JOptionPane.showMessageDialog(frame, "Recruiter deleted.");
+                } else {
+                    JOptionPane.showMessageDialog(frame, "Failed to delete recruiter.");
+                }
+            }
+        }));
+
+        JScrollPane scrollPane = new JScrollPane(table);
+        panel.add(scrollPane, BorderLayout.CENTER);
         return panel;
     }
 
-    // Create the System Logs Panel
     private JPanel createLogsPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.add(new JLabel("System Logs & Audit Trail", JLabel.CENTER), BorderLayout.CENTER);
+        JLabel label = new JLabel("System Logs & Audit Trail", JLabel.CENTER);
+        label.setFont(new Font("Arial", Font.BOLD, 18));
+        label.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        panel.add(label, BorderLayout.NORTH);
+
+        JTextArea logsArea = new JTextArea();
+        logsArea.setEditable(false);
+        logsArea.setFont(new Font("Monospaced", Font.PLAIN, 14));
+        logsArea.setText("2025-04-13 10:45: Admin logged in\n2025-04-13 10:46: Viewed User List\n");
+
+        JScrollPane scrollPane = new JScrollPane(logsArea);
+        panel.add(scrollPane, BorderLayout.CENTER);
+
         return panel;
+    }
+
+    class ButtonRenderer extends JButton implements TableCellRenderer {
+        public ButtonRenderer() {
+            setOpaque(true);
+        }
+
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                                                       boolean isSelected, boolean hasFocus, int row, int column) {
+            setText((value == null) ? "" : value.toString());
+            return this;
+        }
+    }
+
+    class ButtonEditor extends DefaultCellEditor {
+        protected JButton button;
+        private String label;
+        private boolean isPushed;
+        private RowAction action;
+        private int buttonRow;
+
+        public ButtonEditor(String label, RowAction action) {
+            super(new JCheckBox());
+            this.label = label;
+            this.action = action;
+            button = new JButton(label);
+            button.setOpaque(true);
+            button.addActionListener(e -> {
+                fireEditingStopped();
+                action.execute(buttonRow);
+            });
+        }
+
+        public Component getTableCellEditorComponent(JTable table, Object value,
+                                                     boolean isSelected, int row, int column) {
+            button.setText(label);
+            buttonRow = row;
+            isPushed = true;
+            return button;
+        }
+
+        public Object getCellEditorValue() {
+            return label;
+        }
+
+        public boolean stopCellEditing() {
+            isPushed = false;
+            return super.stopCellEditing();
+        }
+
+        protected void fireEditingStopped() {
+            super.fireEditingStopped();
+        }
+    }
+
+    interface RowAction {
+        void execute(int row);
     }
 }

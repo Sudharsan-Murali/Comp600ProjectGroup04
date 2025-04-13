@@ -270,7 +270,7 @@ public class UserDAO {
         int defaultPageSize = 10;
         return getUserApplications(email, defaultPage, defaultPageSize);
     }
-    
+
     // Update user profile.
     public boolean updateUserProfile(User user) {
         String query = "UPDATE Users SET First_name = ?, Last_name = ?, Mobile = ?, Dob = ?, Password = ?, " +
@@ -525,37 +525,38 @@ public class UserDAO {
         List<Object[]> list = new ArrayList<>();
         int userId = getUserIdByEmail(email);
         String query = "SELECT au.Application_ID as appNo, au.Job_Title, au.Application_Date, aps.Status_type " +
-                        "FROM Applications_User au " +
-                        "JOIN Application_Status aps ON au.Status_ID = aps.Status_ID " +
-                        "JOIN Users u ON u.User_ID = au.User_ID " +
-                        "WHERE u.Email = ?"+
-                        "ORDER BY au.application_date DESC " +
-                        "LIMIT ? OFFSET ?";
-                   try (Connection conn = getConnection();
-                   PreparedStatement stmt = conn.prepareStatement(query)) {
-          
-                  stmt.setString(1, email);
-                  stmt.setInt(2, pageSize);
-                  stmt.setInt(3, (page - 1) * pageSize);
-          
-                  ResultSet rs = stmt.executeQuery();
-                  List<Object[]> rows = new ArrayList<>();
-                  while (rs.next()) {
-                      Object[] row = new Object[4];
-                      row[0] = rs.getInt("appNo");
-                      row[1] = rs.getString("job_title");
-                      row[2] = rs.getDate("application_date");
-                      // If s.status_type is null, you might want to handle it (for example, "Unknown")
-                      row[3] = rs.getString("status_type") != null ? rs.getString("status_type") : "Unknown";
-                      rows.add(row);
-                  }
+                "FROM Applications_User au " +
+                "JOIN Application_Status aps ON au.Status_ID = aps.Status_ID " +
+                "JOIN Users u ON u.User_ID = au.User_ID " +
+                "WHERE u.Email = ?" +
+                "ORDER BY au.application_ID DESC " +
+                "LIMIT ? OFFSET ?";
+        try (Connection conn = getConnection();
+                PreparedStatement stmt = conn.prepareStatement(query)) {
+
+            stmt.setString(1, email);
+            stmt.setInt(2, pageSize);
+            stmt.setInt(3, (page - 1) * pageSize);
+
+            ResultSet rs = stmt.executeQuery();
+            List<Object[]> rows = new ArrayList<>();
+            while (rs.next()) {
+                Object[] row = new Object[4];
+                row[0] = rs.getInt("appNo");
+                row[1] = rs.getString("job_title");
+                row[2] = rs.getDate("application_date");
+                // If s.status_type is null, you might want to handle it (for example,
+                // "Unknown")
+                row[3] = rs.getString("status_type") != null ? rs.getString("status_type") : "Unknown";
+                rows.add(row);
+            }
             return rows.toArray(new Object[rows.size()][]);
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return new Object[0][0];
     }
-    
+
     public boolean withdrawApplication(int applicationId, String userEmail) {
         // Update the application's status to "Withdrawn". Here we assume that 10
         // represents "Withdrawn".
@@ -797,5 +798,106 @@ public class UserDAO {
             return false;
         }
     }
+    
+    //For adding admin dashboard
+    // All users (for Admin dashboard table)
 
+    public static List<Map<String, String>> getAllUsers() {
+        List<Map<String, String>> userList = new ArrayList<>();
+        String query = "SELECT User_ID, CONCAT(First_name, ' ', Last_name) AS Name, Email FROM Users WHERE Role_ID = 1";
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
+                PreparedStatement stmt = conn.prepareStatement(query);
+                ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                Map<String, String> user = new HashMap<>();
+                user.put("user_id", rs.getString("User_ID"));
+                user.put("name", rs.getString("Name"));
+                user.put("email", rs.getString("Email"));
+                userList.add(user);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return userList;
+
+    }
+
+    // Delete user by ID
+    public static boolean deleteUserById(String userId) {
+        String query = "DELETE FROM Users WHERE User_ID = ?";
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
+                PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, userId);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // Update user email by ID
+    public static boolean updateUserEmail(String userId, String newEmail) {
+        String query = "UPDATE Users SET Email = ? WHERE User_ID = ?";
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
+                PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, newEmail);
+            stmt.setString(2, userId);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // Get all recruiters (Role_ID = 2)
+    public static List<Map<String, String>> getAllRecruiters() {
+        List<Map<String, String>> recruiterList = new ArrayList<>();
+        String query = "SELECT u.User_ID, CONCAT(u.First_name, ' ', u.Last_name) AS Name, u.Email, c.Company_name " +
+                "FROM Users u " +
+                "LEFT JOIN Company c ON u.Company_ID = c.Company_ID " +
+                "WHERE u.Role_ID = 2";
+
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
+                PreparedStatement stmt = conn.prepareStatement(query);
+                ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                Map<String, String> recruiter = new HashMap<>();
+                recruiter.put("user_id", rs.getString("User_ID"));
+                recruiter.put("name", rs.getString("Name"));
+                recruiter.put("email", rs.getString("Email"));
+                recruiter.put("company", rs.getString("Company_name"));
+                recruiterList.add(recruiter);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return recruiterList;
+    }
+
+    // Update recruiter email
+    public static boolean updateRecruiterEmail(String recruiterId, String newEmail) {
+        String query = "UPDATE Users SET Email = ? WHERE User_ID = ? AND Role_ID = 2";
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
+                PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, newEmail);
+            stmt.setString(2, recruiterId);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // Delete recruiter by ID
+    public static boolean deleteRecruiterById(String recruiterId) {
+        String query = "DELETE FROM Users WHERE User_ID = ? AND Role_ID = 2";
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
+                PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, recruiterId);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 }
