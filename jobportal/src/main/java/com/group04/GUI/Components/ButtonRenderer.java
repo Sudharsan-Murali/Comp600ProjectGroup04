@@ -5,16 +5,20 @@ import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 
 public class ButtonRenderer extends JButton implements TableCellRenderer {
-
-    public ButtonRenderer(String text) {
-        setText(text);
+    public ButtonRenderer(Icon icon) {
+        setIcon(icon);
         setOpaque(true);
+        setContentAreaFilled(true);       // Make it look like a button
+        setBorderPainted(true);           // Show border
+        setFocusPainted(false);
+        setHorizontalAlignment(JLabel.CENTER);
+        setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)); // Pointer cursor
     }
 
     @Override
     public Component getTableCellRendererComponent(JTable table, Object value,
-        boolean isSelected, boolean hasFocus, int row, int column) {
-
+            boolean isSelected, boolean hasFocus, int row, int column) {
+        setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
         return this;
     }
 }

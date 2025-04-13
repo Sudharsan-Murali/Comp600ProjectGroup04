@@ -1,8 +1,5 @@
 package com.group04.DAO;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -267,6 +264,13 @@ public class UserDAO {
         return -1;
     }
 
+    public Object[][] getUserApplications(String email) {
+        // Default: Page 1 with a fixed page size (you can define your default pageSize)
+        int defaultPage = 1;
+        int defaultPageSize = 10;
+        return getUserApplications(email, defaultPage, defaultPageSize);
+    }
+    
     // Update user profile.
     public boolean updateUserProfile(User user) {
         String query = "UPDATE Users SET First_name = ?, Last_name = ?, Mobile = ?, Dob = ?, Password = ?, " +
@@ -450,16 +454,17 @@ public class UserDAO {
 
     // 3. Get detailed information for a job post by Job Title.
     public Map<String, String> getJobDetail(String jobTitle) {
-        // Correct SQL: Note the "SELECT" keyword at the beginning and no reference to a missing Due_Date column.
+        // Correct SQL: Note the "SELECT" keyword at the beginning and no reference to a
+        // missing Due_Date column.
         String query = "SELECT ra.Job_Title, c.Company_name, ra.Job_location, jt.Job_Type, " +
-                       "ra.Job_Description, ra.Required_Experience, ra.Date_Of_Application " +
-                       "FROM Recruiters_Applications ra " +
-                       "LEFT JOIN Job_Type jt ON ra.Job_Type = jt.JobType_ID " +
-                       "LEFT JOIN Company c ON ra.Company_ID = c.Company_ID " +
-                       "WHERE ra.Job_Title = ?";
+                "ra.Job_Description, ra.Required_Experience, ra.Date_Of_Application " +
+                "FROM Recruiters_Applications ra " +
+                "LEFT JOIN Job_Type jt ON ra.Job_Type = jt.JobType_ID " +
+                "LEFT JOIN Company c ON ra.Company_ID = c.Company_ID " +
+                "WHERE ra.Job_Title = ?";
         Map<String, String> details = new HashMap<>();
-        try (Connection conn = getConnection(); 
-             PreparedStatement stmt = conn.prepareStatement(query)) {
+        try (Connection conn = getConnection();
+                PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setString(1, jobTitle);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
@@ -477,33 +482,38 @@ public class UserDAO {
         }
         return null;
     }
-    
 
-    // 4. Apply for a job (insert a record into Applications_User).
     public boolean applyForJob(String jobTitle, String userEmail) {
         // First, fetch the User_ID and Company_ID for this user.
         int userId = getUserIdByEmail(userEmail);
+        int companyId = getCompanyIdByEmail(userEmail);
+        System.out.println("Applying for job: " + jobTitle + " with User_ID: " + userId + ", Company_ID: " + companyId);
+
         if (userId == -1) {
             System.err.println("User not found for email: " + userEmail);
             return false;
         }
-        int companyId = getCompanyIdByEmail(userEmail); // Or retrieve from Users table.
+        companyId = getCompanyIdByEmail(userEmail); // Or retrieve from Users table.
         if (companyId == -1) {
             System.err.println("Company not found for user email: " + userEmail);
             return false;
         }
 
-        // Insert with default Status_ID; here we assume 1 = Pending.
+        // Insert record with default Status_ID 1 = Pending.
         String insertQuery = "INSERT INTO Applications_User (Job_Title, Application_Date, User_ID, Company_ID, Status_ID) "
                 +
                 "VALUES (?, ?, ?, ?, ?)";
-        try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(insertQuery)) {
+        try (Connection conn = getConnection();
+                PreparedStatement stmt = conn.prepareStatement(insertQuery)) {
             stmt.setString(1, jobTitle);
             stmt.setDate(2, new java.sql.Date(System.currentTimeMillis()));
             stmt.setInt(3, userId);
             stmt.setInt(4, companyId);
-            stmt.setInt(5, 1); // Use the appropriate status; here 1 represents 'Pending'
-            return stmt.executeUpdate() > 0;
+            stmt.setInt(5, 1); // Assume 1 represents 'Pending'
+
+            int rowsAffected = stmt.executeUpdate();
+            System.out.println("Rows inserted: " + rowsAffected);
+            return rowsAffected > 0;
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
@@ -511,40 +521,46 @@ public class UserDAO {
     }
 
     // 5. Get user applications for a given user email.
-    public Object[][] getUserApplications(String userEmail) {
-        // This query joins Applications_User, Application_Status, and Users.
-        String query = "SELECT au.Application_ID, au.Job_Title, au.Application_Date, aps.Status_type " +
-                "FROM Applications_User au " +
-                "JOIN Application_Status aps ON au.Status_ID = aps.Status_ID " +
-                "JOIN Users u ON u.User_ID = au.User_ID " +
-                "WHERE u.Email = ?";
-        try (Connection conn = getConnection();
-                PreparedStatement stmt = conn.prepareStatement(query,
-                        ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
-            stmt.setString(1, userEmail);
-            ResultSet rs = stmt.executeQuery();
-            rs.last();
-            int rowCount = rs.getRow();
-            rs.beforeFirst();
-            Object[][] data = new Object[rowCount][4];
-            int row = 0;
-            while (rs.next()) {
-                data[row][0] = rs.getInt("Application_ID");
-                data[row][1] = rs.getString("Job_Title");
-                data[row][2] = rs.getDate("Application_Date").toString();
-                data[row][3] = rs.getString("Status_type");
-                row++;
-            }
-            return data;
+    public Object[][] getUserApplications(String email, int page, int pageSize) {
+        List<Object[]> list = new ArrayList<>();
+        int userId = getUserIdByEmail(email);
+        String query = "SELECT au.Application_ID as appNo, au.Job_Title, au.Application_Date, aps.Status_type " +
+                        "FROM Applications_User au " +
+                        "JOIN Application_Status aps ON au.Status_ID = aps.Status_ID " +
+                        "JOIN Users u ON u.User_ID = au.User_ID " +
+                        "WHERE u.Email = ?"+
+                        "ORDER BY au.application_date DESC " +
+                        "LIMIT ? OFFSET ?";
+                   try (Connection conn = getConnection();
+                   PreparedStatement stmt = conn.prepareStatement(query)) {
+          
+                  stmt.setString(1, email);
+                  stmt.setInt(2, pageSize);
+                  stmt.setInt(3, (page - 1) * pageSize);
+          
+                  ResultSet rs = stmt.executeQuery();
+                  List<Object[]> rows = new ArrayList<>();
+                  while (rs.next()) {
+                      Object[] row = new Object[4];
+                      row[0] = rs.getInt("appNo");
+                      row[1] = rs.getString("job_title");
+                      row[2] = rs.getDate("application_date");
+                      // If s.status_type is null, you might want to handle it (for example, "Unknown")
+                      row[3] = rs.getString("status_type") != null ? rs.getString("status_type") : "Unknown";
+                      rows.add(row);
+                  }
+            return rows.toArray(new Object[rows.size()][]);
         } catch (SQLException e) {
             e.printStackTrace();
-            return new Object[0][0];
         }
+        return new Object[0][0];
     }
-
-    // 6. Withdraw an application (delete the record).
+    
     public boolean withdrawApplication(int applicationId, String userEmail) {
-        String query = "DELETE FROM Applications_User WHERE Application_ID = ? AND User_ID = (SELECT User_ID FROM Users WHERE Email = ?)";
+        // Update the application's status to "Withdrawn". Here we assume that 10
+        // represents "Withdrawn".
+        String query = "UPDATE Applications_User SET Status_ID = 10 " +
+                "WHERE Application_ID = ? AND User_ID = (SELECT User_ID FROM Users WHERE Email = ?)";
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setInt(1, applicationId);
             stmt.setString(2, userEmail);
@@ -743,4 +759,43 @@ public class UserDAO {
             return false;
         }
     }
+
+    public boolean updateJobPost(int jobId, int userId, String jobTitle, int jobTypeId,
+            double minSalary, double maxSalary, String jobDesc,
+            String jobLocation, String experience, Date dateOfApplication) {
+        String sql = "UPDATE recruiters_applications SET Job_Title = ?, Job_Type_ID = ?, Min_Salary = ?, Max_Salary = ?, "
+                +
+                "Job_Description = ?, Job_location = ?, Required_Experience = ?, Date_Of_Application = ? " +
+                "WHERE Job_ID = ? AND User_ID = ?";
+        try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, jobTitle);
+            stmt.setInt(2, jobTypeId);
+            stmt.setDouble(3, minSalary);
+            stmt.setDouble(4, maxSalary);
+            stmt.setString(5, jobDesc);
+            stmt.setString(6, jobLocation);
+            stmt.setString(7, experience);
+            stmt.setDate(8, dateOfApplication);
+            stmt.setInt(9, jobId);
+            stmt.setInt(10, userId);
+            return stmt.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean deleteJobPostById(int jobId, int userId) {
+        String sql = "DELETE FROM recruiters_applications WHERE Job_ID = ? AND User_ID = ?";
+        try (Connection conn = getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, jobId);
+            stmt.setInt(2, userId);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
 }

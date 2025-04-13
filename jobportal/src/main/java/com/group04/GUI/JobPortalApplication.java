@@ -8,9 +8,6 @@ import com.group04.GUI.Recruiter.RecruiterProfileScreen;
 import com.group04.GUI.User.UserProfileScreen;
 
 import java.awt.*;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 
 public class JobPortalApplication {
     JFrame frame;
@@ -137,7 +134,7 @@ public class JobPortalApplication {
                 // Check if the role matches the selected tab
                 if ((role.equals("User") && roleId == 1) ||
                         (role.equals("Recruiter") && roleId == 2) ||
-                        (role.equals("Admin") && roleId == 1)) {
+                        (role.equals("Admin") && roleId == 3)) {
 
                     // Navigate to the appropriate screen based on the roleId
                     switch (roleId) {

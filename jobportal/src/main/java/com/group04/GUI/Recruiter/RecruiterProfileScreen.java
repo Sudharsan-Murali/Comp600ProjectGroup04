@@ -4,11 +4,15 @@ import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableColumnModel;
+
 import java.awt.*;
 import java.io.File;
+import java.net.URL;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.util.Map;
+import javax.swing.table.TableCellEditor;
+import java.awt.event.*;
 
 import java.util.List;
 import com.group04.DAO.UserDAO;
@@ -24,6 +28,8 @@ public class RecruiterProfileScreen {
     private JFrame frame;
     private JLabel pageLabel;
     private int currentPage = 1;
+    private boolean isEditMode = false;
+    private int editingJobId = -1; // We'll use this to pass the actual DB Job_ID
 
     private String recruiterEmail;
     private Map<String, String> recruiterData;
@@ -38,7 +44,49 @@ public class RecruiterProfileScreen {
     // ADD JOB POST SCREEN
     private JTextField jobIdField;
     private JTextField jobTitleField;
-    private JTextField minSalaryField;
+    private JTextField minSalaryField; // Inside RecruiterProfileScreen class
+
+    public class ButtonEditor extends DefaultCellEditor {
+        public interface ButtonClickListener {
+            void onClick(int row);
+        }
+
+        private final JButton button;
+        private final JTable table;
+        private final ButtonClickListener clickListener;
+
+        public ButtonEditor(Icon icon, JTable table, ButtonClickListener listener) {
+            super(new JTextField());
+            this.table = table;
+            this.clickListener = listener;
+            this.button = new JButton(icon);
+            setupButton();
+        }
+
+        private void setupButton() {
+            button.setBorderPainted(false);
+            button.setContentAreaFilled(false);
+            button.setFocusPainted(false);
+            button.setOpaque(true);
+            button.addActionListener(e -> {
+                int row = table.getEditingRow();
+                fireEditingStopped();
+                clickListener.onClick(row);
+            });
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value,
+                boolean isSelected, int row, int column) {
+            return button;
+        }
+
+        @Override
+        public Object getCellEditorValue() {
+            return null;
+        }
+    };
+
     private JTextField maxSalaryField;
     private JTextArea jobDescField;
     private JTextField jobLocationField;
@@ -400,6 +448,16 @@ public class RecruiterProfileScreen {
         rightPanel.setLayout(new BorderLayout());
         rightPanel.setBackground(Color.WHITE);
 
+        ImageIcon editIcon = null;
+        ImageIcon deleteIcon = null;
+
+        try {
+            editIcon = loadScaledIcon("/icons/edit.png", 20, 20);
+            deleteIcon = loadScaledIcon("/icons/delete.png", 20, 20);
+        } catch (Exception e) {
+            System.err.println("Icon load failed: " + e.getMessage());
+        }
+
         // 1. Add Header (with ADD button)
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setBackground(Color.WHITE);
@@ -428,33 +486,85 @@ public class RecruiterProfileScreen {
             rightPanel.add(noDataLabel, BorderLayout.CENTER);
         } else {
             // 3. Display job posts in table
-            String[] columnNames = { "S.NO", "JOB TITLE", "DATE POSTED", "LOCATION", "EDIT", "DELETE" };
-            Object[][] data = new Object[jobPosts.size()][6];
+            String[] columnNames = { "S.NO", "JOB ID", "JOB TITLE", "DATE POSTED", "LOCATION", "EDIT", "DELETE" };
+            Object[][] data = new Object[jobPosts.size()][7];
 
             for (int i = 0; i < jobPosts.size(); i++) {
                 Map<String, Object> row = jobPosts.get(i);
                 data[i][0] = i + 1;
-                data[i][1] = row.get("Job_Title");
-                data[i][2] = row.get("Date_Of_Application");
-                data[i][3] = row.get("Job_location");
-                data[i][4] = "Edit";
-                data[i][5] = "Delete";
+                data[i][1] = row.get("Job_ID");
+                data[i][2] = row.get("Job_Title");
+                data[i][3] = row.get("Date_Of_Application");
+                data[i][4] = row.get("Job_location");
+                data[i][5] = "";
+                data[i][6] = "";
             }
 
-            JTable jobTable = new JTable(data, columnNames);
+            JTable jobTable = new JTable(data, columnNames) {
+                @Override
+                public boolean isCellEditable(int row, int column) {
+                    // Only allow edit/delete columns to be editable
+                    return column == 5 || column == 6;
+                }
+
+                @Override
+                public Class<?> getColumnClass(int column) {
+                    return getValueAt(0, column) != null ? getValueAt(0, column).getClass() : Object.class;
+                }
+            };
+
             jobTable.setRowHeight(30);
             jobTable.setFont(new Font("SansSerif", Font.PLAIN, 14));
             jobTable.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 16));
 
-            jobTable.getColumnModel().getColumn(4).setCellRenderer(new ButtonRenderer("Edit"));
-            jobTable.getColumnModel().getColumn(4).setCellEditor(new ButtonEditor("Edit", jobTable, row -> {
-                System.out.println("Edit clicked for row " + row);
+            jobTable.getColumnModel().getColumn(5).setCellRenderer(new ButtonRenderer(editIcon));
+            jobTable.getColumnModel().getColumn(5).setCellEditor(new ButtonEditor(editIcon, jobTable, row -> {
+                Map<String, Object> selectedJob = jobPosts.get(row);
+                showAddJobPostsScreen(selectedJob);
             }));
 
-            jobTable.getColumnModel().getColumn(5).setCellRenderer(new ButtonRenderer("Delete"));
-            jobTable.getColumnModel().getColumn(5).setCellEditor(new ButtonEditor("Delete", jobTable, row -> {
-                System.out.println("Delete clicked for row " + row);
+            jobTable.getColumnModel().getColumn(6).setCellRenderer(new ButtonRenderer(deleteIcon));
+            // jobTable.getColumnModel().getColumn(5).setCellEditor(new
+            // ButtonEditor(deleteIcon, jobTable, row -> {
+            // System.out.println("Delete clicked for row " + row);
+            // }));
+            jobTable.getColumnModel().getColumn(6).setCellEditor(new ButtonEditor(deleteIcon, jobTable, row -> {
+                int confirm = JOptionPane.showConfirmDialog(frame, "Are you sure you want to delete this job post?",
+                        "Confirm Deletion", JOptionPane.YES_NO_OPTION);
+                if (confirm == JOptionPane.YES_OPTION) {
+                    Object jobIdObj = jobTable.getValueAt(row, 1); // Get Job_ID from hidden column
+                    int jobId = Integer.parseInt(jobIdObj.toString());
+
+                    UserDAO dao = new UserDAO();
+                    boolean deleted = dao.deleteJobPostById(jobId, userID);
+
+                    if (deleted) {
+                        JOptionPane.showMessageDialog(frame, "Job post deleted successfully.");
+                        showJobPostsScreen(); // Refresh table
+                    } else {
+                        JOptionPane.showMessageDialog(frame, "Failed to delete job post.", "Error",
+                                JOptionPane.ERROR_MESSAGE);
+                    }
+                }
             }));
+
+            jobTable.setCellSelectionEnabled(true);
+            jobTable.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mousePressed(MouseEvent e) {
+                    Point point = e.getPoint();
+                    int row = jobTable.rowAtPoint(point);
+                    int column = jobTable.columnAtPoint(point);
+
+                    if (row >= 0 && column >= 0 && jobTable.isCellEditable(row, column)) {
+                        jobTable.editCellAt(row, column);
+                        Component editor = jobTable.getEditorComponent();
+                        if (editor != null) {
+                            editor.requestFocus();
+                        }
+                    }
+                }
+            });
 
             JScrollPane scrollPane = new JScrollPane(jobTable);
             rightPanel.add(scrollPane, BorderLayout.CENTER);
@@ -464,10 +574,25 @@ public class RecruiterProfileScreen {
         rightPanel.repaint();
     }
 
-    // ----------------------------
+    private ImageIcon loadScaledIcon(String path, int width, int height) {
+        try {
+            URL url = getClass().getResource(path);
+            if (url == null) {
+                System.err.println("❌ Icon not found at: " + path);
+                return null;
+            }
+            Image original = new ImageIcon(url).getImage();
+            Image scaled = original.getScaledInstance(width, height, Image.SCALE_SMOOTH);
+            return new ImageIcon(scaled);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 
+    // ----------------------------
     // Uniform Add Job Posts Screen
-    private void showAddJobPostsScreen() {
+    private void showAddJobPostsScreen(Map<String, Object> jobData) {
         rightPanel.removeAll();
         rightPanel.setLayout(new BorderLayout());
         rightPanel.setBackground(Color.WHITE);
@@ -640,6 +765,27 @@ public class RecruiterProfileScreen {
         rightPanel.add(formPanel, BorderLayout.CENTER);
         rightPanel.revalidate();
         rightPanel.repaint();
+
+        if (jobData != null) {
+            jobIdField.setText(jobData.get("Job_ID").toString());
+            jobTitleField.setText((String) jobData.get("Job_Title"));
+            minSalaryField.setText(jobData.get("Min_Salary").toString());
+            maxSalaryField.setText(jobData.get("Max_Salary").toString());
+            jobDescField.setText((String) jobData.get("Job_Description"));
+            jobLocationField.setText((String) jobData.get("Job_location"));
+            experienceField.setText((String) jobData.get("Required_Experience"));
+
+            int jobType = Integer.parseInt(jobData.get("Job_Type_ID").toString());
+            switch (jobType) {
+                case 1 -> jobTypeComboBox.setSelectedItem("Onsite");
+                case 2 -> jobTypeComboBox.setSelectedItem("Remote");
+                case 3 -> jobTypeComboBox.setSelectedItem("Hybrid");
+            }
+        }
+    }
+
+    private void showAddJobPostsScreen() {
+        showAddJobPostsScreen(null); // Just call with null for new post
     }
 
     // ----------------------------

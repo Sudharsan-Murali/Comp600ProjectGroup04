@@ -6,6 +6,9 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -14,20 +17,20 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.awt.event.ActionListener;
+import java.util.Map;
 
+import com.group04.GUI.Components.ButtonColumn;
 import com.group04.DAO.User;
 import com.group04.DAO.UserDAO;
 import com.group04.GUI.Components.BaseScreen;
 import com.group04.GUI.Components.ButtonFactory;
-import com.group04.GUI.Components.ButtonColumn;
 
 public class UserProfileScreen extends BaseScreen {
 
     private String loggedInEmail;
     private JLabel profilePicLabel;
     private JButton uploadButton, removeButton;
-    private JPanel rightPanel; // Right panel uses CardLayout for smooth transitions.
+    private JPanel rightPanel;
 
     private JTextField txtFirstName;
     private JTextField txtLastName;
@@ -38,9 +41,14 @@ public class UserProfileScreen extends BaseScreen {
     private JTextField txtPreferences;
     private JTextField txtLinkedIn;
     private JTextField txtAvailability;
-    private JLabel resumeStatusLabel; // To display resume upload status
+    
     private JLabel resumeFileNameLabel;
-    private File resumeFile; // Holds the selected resume file.
+    private JTable appTable;
+    private ActionListener viewAction, withdrawAction, resumeAction;
+    private int currentAppPage = 1;
+    private final int appPageSize = 20;    
+    private final String[] appColumnNames = { "APP NO", "JOB TITLE", "APPLICATION DATE", "STATUS", "VIEW", "WITHDRAW",
+            "RESUME" };    
 
     public UserProfileScreen(String userEmail) {
         super("User Profile");
@@ -64,28 +72,28 @@ public class UserProfileScreen extends BaseScreen {
         txtPhone.setEditable(false);
         txtPreferences.setEditable(false);
 
-        // Initialize resume status label (for clickable file name).
-        resumeStatusLabel = new JLabel("<html><u>No file selected</u></html>");
-        resumeStatusLabel.setForeground(Color.BLUE);
-        resumeStatusLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-
-        // Build the UI.
+        // Initialize resume label.
+        resumeFileNameLabel = new JLabel("<html><u>No file selected</u></html>");
+        resumeFileNameLabel.setForeground(Color.BLUE);
+        resumeFileNameLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        resumeFileNameLabel.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                downloadResume();
+            }
+        });
+        // ... initialize fields ...
         initializeUIWithCards();
-
+        initializeActionListeners(); // <--- Add this here
+    
         // Other UI settings.
         setExtendedState(JFrame.MAXIMIZED_BOTH);
-        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        setSize(screenSize);
         setLocationRelativeTo(null);
-
-        // Load user data from the database.
+        
         loadUserData();
-
         setVisible(true);
     }
 
-    // Stub for getUserProfile; ideally, profile data is fetched via the DAO.
-    // (This method is used only in the UI if needed.)
     public User getUserProfile(String email) {
         // You might not be using this method since your DAO already provides one.
         String query = "SELECT first_name, last_name, email, mobile, dob, role_id, security_que, security_ans, company, job_role, preferences, linkedin_url, availability FROM users WHERE email = ?";
@@ -118,15 +126,10 @@ public class UserProfileScreen extends BaseScreen {
         return user;
     }
 
-    // Placeholder for getConnection() - make sure to implement or remove if using
-    // DAO exclusively.
     private Connection getConnection() {
         throw new UnsupportedOperationException("Unimplemented method 'getConnection'");
     }
 
-    /**
-     * Initializes the UI using CardLayout in the right panel.
-     */
     private void initializeUIWithCards() {
         Container container = getContentPane();
         container.setLayout(new BorderLayout(20, 20));
@@ -145,14 +148,10 @@ public class UserProfileScreen extends BaseScreen {
         JButton logoutButton = ButtonFactory.createSideButton("Logout");
 
         Font navFont = new Font("SansSerif", Font.BOLD, 14);
-        profileButton.setFont(navFont);
-        searchJobsButton.setFont(navFont);
-        applicationsButton.setFont(navFont);
-        logoutButton.setFont(navFont);
-        profileButton.setForeground(Color.WHITE);
-        searchJobsButton.setForeground(Color.WHITE);
-        applicationsButton.setForeground(Color.WHITE);
-        logoutButton.setForeground(Color.WHITE);
+        for (JButton btn : new JButton[] { profileButton, searchJobsButton, applicationsButton, logoutButton }) {
+            btn.setFont(navFont);
+            btn.setForeground(Color.WHITE);
+        }
 
         // Navigation: use CardLayout-based switching.
         profileButton.addActionListener(e -> showCard("Profile"));
@@ -173,7 +172,6 @@ public class UserProfileScreen extends BaseScreen {
         rightPanel = new JPanel(new CardLayout());
         rightPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         rightPanel.setBackground(Color.WHITE);
-
         // Add cards.
         rightPanel.add(createProfileScreenPanel(), "Profile");
         rightPanel.add(createSearchJobsPanel(), "SearchJobs");
@@ -181,17 +179,11 @@ public class UserProfileScreen extends BaseScreen {
         container.add(rightPanel, BorderLayout.CENTER);
     }
 
-    /**
-     * Switches the visible card based on card name.
-     */
     private void showCard(String cardName) {
         CardLayout cl = (CardLayout) rightPanel.getLayout();
         cl.show(rightPanel, cardName);
     }
 
-    /**
-     * Creates a uniform title label.
-     */
     private JLabel createTitleLabel(String text) {
         JLabel titleLabel = new JLabel(text, SwingConstants.LEFT);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
@@ -201,9 +193,6 @@ public class UserProfileScreen extends BaseScreen {
         return titleLabel;
     }
 
-    /**
-     * Creates the Profile Screen panel.
-     */
     private JPanel createProfileScreenPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
@@ -214,7 +203,6 @@ public class UserProfileScreen extends BaseScreen {
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
         contentPanel.setOpaque(false);
         contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-
         contentPanel.add(createProfilePicPanel());
         contentPanel.add(Box.createVerticalStrut(10));
         contentPanel.add(createProfileFormPanel());
@@ -226,7 +214,6 @@ public class UserProfileScreen extends BaseScreen {
         saveButton.setPreferredSize(new Dimension(100, 30));
         saveButton.addActionListener(e -> saveProfileData());
         savePanel.add(saveButton);
-
         contentPanel.add(Box.createVerticalStrut(10));
         contentPanel.add(savePanel);
 
@@ -234,14 +221,9 @@ public class UserProfileScreen extends BaseScreen {
         return panel;
     }
 
-    /**
-     * Creates the Search Jobs panel with a table.
-     */
     private JPanel createSearchJobsPanel() {
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBackground(Color.WHITE);
-
-        // Title label at the top
         mainPanel.add(createTitleLabel("Search Jobs"), BorderLayout.NORTH);
 
         // Top Search Bar: Only contains Filter and Reset Filter buttons.
@@ -263,13 +245,11 @@ public class UserProfileScreen extends BaseScreen {
 
         // Define the table columns.
         final String[] columnNames = { "Title", "Company", "Location", "Job Type" };
-
         // Setup pagination variables.
-        final int pageSize = 10; // Number of records per page.
+        final int pageSize = 20; // Number of records per page.
         final int[] currentPage = { 1 }; // Mutable current page stored in an array
 
         UserDAO userDAO = new UserDAO();
-        // Initially load page 1
         Object[][] data = userDAO.getJobListings(currentPage[0], pageSize);
 
         // Create table with non-editable model.
@@ -339,19 +319,19 @@ public class UserProfileScreen extends BaseScreen {
         });
 
         // RIGHT PANEL: Job Details
-        final JPanel detailPanel = new JPanel();
+        JPanel detailPanel = new JPanel();
         detailPanel.setLayout(new BoxLayout(detailPanel, BoxLayout.Y_AXIS));
         detailPanel.setBackground(Color.WHITE);
         detailPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        final JLabel jobTitleLabel = new JLabel();
+        JLabel jobTitleLabel = new JLabel();
         jobTitleLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
-        final JLabel companyLabel = new JLabel();
-        final JLabel locationLabel = new JLabel();
-        final JLabel jobTypeLabel = new JLabel();
-        final JLabel dateLabel = new JLabel(); // For Date of Application
-        final JLabel dueDateLabel = new JLabel(); // For Due Date (if available)
-        final JTextArea jobDescArea = new JTextArea();
+        JLabel companyLabel = new JLabel();
+        JLabel locationLabel = new JLabel();
+        JLabel jobTypeLabel = new JLabel();
+        JLabel dateLabel = new JLabel(); // For Date of Application
+        JLabel dueDateLabel = new JLabel(); // For Due Date (if available)
+        JTextArea jobDescArea = new JTextArea();
         jobDescArea.setEditable(false);
         jobDescArea.setLineWrap(true);
         jobDescArea.setWrapStyleWord(true);
@@ -360,7 +340,7 @@ public class UserProfileScreen extends BaseScreen {
         descScroll.setPreferredSize(new Dimension(300, 150));
 
         // Create an "Apply here" button.
-        final JButton applyButton = new JButton("Apply here");
+        JButton applyButton = new JButton("Apply here");
         applyButton.setEnabled(false);
 
         detailPanel.add(jobTitleLabel);
@@ -428,11 +408,11 @@ public class UserProfileScreen extends BaseScreen {
             if (jobTitle != null && !jobTitle.isEmpty()) {
                 boolean applied = userDAO.applyForJob(jobTitle, loggedInEmail);
                 if (applied) {
-                    JOptionPane.showMessageDialog(mainPanel, "You have successfully applied for the job!",
-                            "Application Submitted", JOptionPane.INFORMATION_MESSAGE);
+                    JOptionPane.showMessageDialog(mainPanel, "Application successful!", "Submitted", JOptionPane.INFORMATION_MESSAGE);
+                    currentAppPage = 1;
+                    refreshApplicationTable();
                 } else {
-                    JOptionPane.showMessageDialog(mainPanel, "Failed to apply for the job. Please try again later.",
-                            "Application Failed", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(mainPanel, "Failed to apply.", "Error", JOptionPane.ERROR_MESSAGE);
                 }
             } else {
                 JOptionPane.showMessageDialog(mainPanel, "No job selected.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -446,7 +426,6 @@ public class UserProfileScreen extends BaseScreen {
         centerPanel.setBackground(Color.WHITE);
         centerPanel.add(searchBarPanel, BorderLayout.NORTH);
         centerPanel.add(splitPane, BorderLayout.CENTER);
-
         mainPanel.add(centerPanel, BorderLayout.CENTER);
 
         // Filter button functionality: Open filter dialog and update table data.
@@ -466,16 +445,11 @@ public class UserProfileScreen extends BaseScreen {
             filterPanel.add(new JLabel("Job Type:"));
             filterPanel.add(jobTypeField);
 
-            int result = JOptionPane.showConfirmDialog(mainPanel, filterPanel, "Filter Jobs",
-                    JOptionPane.OK_CANCEL_OPTION);
+            int result = JOptionPane.showConfirmDialog(mainPanel, filterPanel, "Filter Jobs", JOptionPane.OK_CANCEL_OPTION);
             if (result == JOptionPane.OK_OPTION) {
-                String filterTitle = titleField.getText().trim();
-                String filterCompany = companyField.getText().trim();
-                String filterLocation = locationField.getText().trim();
-                String filterJobType = jobTypeField.getText().trim();
-
-                Object[][] filteredData = userDAO.getFilteredJobListings(filterTitle, filterCompany, filterLocation,
-                        filterJobType);
+                Object[][] filteredData = userDAO.getFilteredJobListings(
+                        titleField.getText().trim(), companyField.getText().trim(),
+                        locationField.getText().trim(), jobTypeField.getText().trim());
                 jobTable.setModel(new DefaultTableModel(filteredData, columnNames) {
                     @Override
                     public boolean isCellEditable(int row, int column) {
@@ -502,41 +476,180 @@ public class UserProfileScreen extends BaseScreen {
         return mainPanel;
     }
 
-    /**
-     * Creates the Applications panel with a table.
-     */
+    private void refreshApplicationTable() {
+        UserDAO userDAO = new UserDAO();
+        Object[][] updatedData = userDAO.getUserApplications(loggedInEmail, currentAppPage, appPageSize);
+        int n = updatedData.length;
+        Object[][] newData = new Object[n][7];
+        for (int i = 0; i < n; i++) {
+            newData[i][0] = updatedData[i][0];
+            newData[i][1] = updatedData[i][1];
+            newData[i][2] = updatedData[i][2];
+            newData[i][3] = updatedData[i][3];
+            newData[i][4] = "View";
+            newData[i][5] = "Withdraw";
+            newData[i][6] = "Resume";
+        }
+        DefaultTableModel newModel = new DefaultTableModel(newData, appColumnNames) {
+            @Override
+            public boolean isCellEditable(int row, int col) {
+                return (col == 4 || col == 5 || col == 6);
+            }
+        };
+        appTable.setModel(newModel);
+        appTable.createDefaultColumnsFromModel();
+            new ButtonColumn(appTable, viewAction, 4);
+            new ButtonColumn(appTable, withdrawAction, 5);
+            new ButtonColumn(appTable, resumeAction, 6);
+    }
+
+    private void initializeActionListeners() {
+        // Define the view action listener
+        viewAction = new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int selectedRow = appTable.getSelectedRow();
+                if (selectedRow >= 0) {
+                    String jobTitle = appTable.getValueAt(selectedRow, 1).toString();
+                    Map<String, String> details = new UserDAO().getJobDetail(jobTitle);
+                    if (details != null) {
+                        String info = "Job Title: " + details.get("Job_Title") +
+                                "\nCompany: " + details.get("Company_name") +
+                                "\nLocation: " + details.get("Job_location") +
+                                "\nJob Type: " + details.get("Job_Type") +
+                                "\nDescription: " + details.get("Job_Description") +
+                                "\nExperience: " + details.get("Required_Experience") +
+                                "\nApplied On: " + details.get("Date_Of_Application") +
+                                "\nDue Date: N/A"; // or your due date if available
+                        JOptionPane.showMessageDialog(null, info, "Job Details", JOptionPane.INFORMATION_MESSAGE);
+                    } else {
+                        JOptionPane.showMessageDialog(null, "No details found.", "Info",
+                                JOptionPane.INFORMATION_MESSAGE);
+                    }
+                }
+            }
+        };
+
+        // Define the withdraw action listener
+        withdrawAction = new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int selectedRow = appTable.getSelectedRow();
+                if (selectedRow >= 0) {
+                    // Check if already withdrawn
+                    if ("Withdrawn".equals(appTable.getValueAt(selectedRow, 5).toString())) {
+                        return;
+                    }
+                    int appId = Integer.parseInt(appTable.getValueAt(selectedRow, 0).toString());
+                    int option = JOptionPane.showConfirmDialog(null,
+                            "Do you want to withdraw application ID: " + appId + "?",
+                            "Withdraw Application", JOptionPane.YES_NO_OPTION);
+                    if (option == JOptionPane.YES_OPTION) {
+                        boolean withdrawn = new UserDAO().withdrawApplication(appId, loggedInEmail);
+                        if (withdrawn) {
+                            JOptionPane.showMessageDialog(null, "Application status updated to Withdrawn.", "Success",
+                                    JOptionPane.INFORMATION_MESSAGE);
+                            // Refresh the table after status update.
+                            refreshApplicationTable();
+                        } else {
+                            JOptionPane.showMessageDialog(null, "Failed to update application status.", "Error",
+                                    JOptionPane.ERROR_MESSAGE);
+                        }
+                    }
+                }
+            }
+        };
+
+        // Define the resume action listener
+        resumeAction = new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int selectedRow = appTable.getSelectedRow();
+                if (selectedRow >= 0) {
+                    int option = JOptionPane.showOptionDialog(null,
+                            "Choose an option:", "Resume Options",
+                            JOptionPane.YES_NO_CANCEL_OPTION,
+                            JOptionPane.QUESTION_MESSAGE,
+                            null,
+                            new Object[] { "View Resume", "Update Resume" },
+                            "View Resume");
+                    if (option == 0) { // View Resume
+                        byte[] resumeBytes = new UserDAO().getUserResume(loggedInEmail);
+                        if (resumeBytes != null && resumeBytes.length > 0) {
+                            try {
+                                File tempFile = File.createTempFile("resume_", ".pdf");
+                                tempFile.deleteOnExit();
+                                try (FileOutputStream fos = new FileOutputStream(tempFile)) {
+                                    fos.write(resumeBytes);
+                                }
+                                Desktop.getDesktop().open(tempFile);
+                            } catch (IOException ioEx) {
+                                ioEx.printStackTrace();
+                                JOptionPane.showMessageDialog(null, "Error opening resume.", "Error",
+                                        JOptionPane.ERROR_MESSAGE);
+                            }
+                        } else {
+                            JOptionPane.showMessageDialog(null, "No resume attached.", "Resume",
+                                    JOptionPane.INFORMATION_MESSAGE);
+                        }
+                    } else if (option == 1) { // Update Resume
+                        JFileChooser fileChooser = new JFileChooser();
+                        fileChooser
+                                .setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("PDF Files", "pdf"));
+                        int retVal = fileChooser.showOpenDialog(null);
+                        if (retVal == JFileChooser.APPROVE_OPTION) {
+                            File file = fileChooser.getSelectedFile();
+                            try (FileInputStream fis = new FileInputStream(file)) {
+                                byte[] fileBytes = new byte[(int) file.length()];
+                                fis.read(fileBytes);
+                                boolean updated = new UserDAO().updateUserResume(loggedInEmail, fileBytes);
+                                if (updated) {
+                                    JOptionPane.showMessageDialog(null, "Resume updated successfully.", "Success",
+                                            JOptionPane.INFORMATION_MESSAGE);
+                                } else {
+                                    JOptionPane.showMessageDialog(null, "Failed to update resume.", "Error",
+                                            JOptionPane.ERROR_MESSAGE);
+                                }
+                            } catch (IOException ioEx) {
+                                ioEx.printStackTrace();
+                            }
+                        }
+                    }
+                }
+            }
+        };
+    }
+
     private JPanel createApplicationsPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
         panel.add(createTitleLabel("Applications"), BorderLayout.NORTH);
 
-        // Define columns matching your UI: APP NO, JOB TITLE, APPLICATION DATE, STATUS,
-        // VIEW.
-        String[] columnNames = { "APP NO", "JOB TITLE", "APPLICATION DATE", "STATUS", "VIEW" };
-
-        // Retrieve user applications from the DAO.
         UserDAO userDAO = new UserDAO();
-        Object[][] data = userDAO.getUserApplications(loggedInEmail);
-
-        // Add a "View" column to the data.
-        Object[][] finalData = new Object[data.length][5];
-        for (int i = 0; i < data.length; i++) {
+        Object[][] data = userDAO.getUserApplications(loggedInEmail, currentAppPage, appPageSize);
+        int n = data.length;
+        Object[][] finalData = new Object[n][7];
+        for (int i = 0; i < n; i++) {
             finalData[i][0] = data[i][0]; // Application ID
             finalData[i][1] = data[i][1]; // Job Title
             finalData[i][2] = data[i][2]; // Application Date
             finalData[i][3] = data[i][3]; // Status
-            finalData[i][4] = "View"; // Button text for view action
+            finalData[i][4] = "View";
+            finalData[i][5] = "Withdraw";
+            finalData[i][6] = "Resume";
         }
 
-        DefaultTableModel model = new DefaultTableModel(finalData, columnNames) {
+        DefaultTableModel model = new DefaultTableModel(finalData, appColumnNames) {
             @Override
             public boolean isCellEditable(int row, int col) {
-                // Only the VIEW column is marked as editable (for our custom button)
-                return col == 4;
+                return (col == 4 || col == 5 || col == 6);
             }
         };
+        // Create and set up the applications table.
+        appTable = new JTable();
+        appTable.setModel(model);
+        appTable.createDefaultColumnsFromModel();
 
-        final JTable appTable = new JTable(model);
         appTable.setRowHeight(30);
         appTable.setFont(new Font("SansSerif", Font.PLAIN, 14));
         appTable.setGridColor(new Color(189, 195, 199));
@@ -555,12 +668,42 @@ public class UserProfileScreen extends BaseScreen {
         scrollPane.getViewport().setBackground(Color.WHITE);
         panel.add(scrollPane, BorderLayout.CENTER);
 
-        // Create a custom button column for "VIEW" using the ButtonColumn helper.
+        // Install ButtonColumn for VIEW (column index 4)
         new ButtonColumn(appTable, new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 int selectedRow = appTable.getSelectedRow();
                 if (selectedRow >= 0) {
+                    String jobTitle = appTable.getValueAt(selectedRow, 1).toString();
+                    Map<String, String> details = userDAO.getJobDetail(jobTitle);
+                    if (details != null) {
+                        String info = "Job Title: " + details.get("Job_Title") +
+                                "\nCompany: " + details.get("Company_name") +
+                                "\nLocation: " + details.get("Job_location") +
+                                "\nJob Type: " + details.get("Job_Type") +
+                                "\nDescription: " + details.get("Job_Description") +
+                                "\nExperience: " + details.get("Required_Experience") +
+                                "\nApplied On: " + details.get("Date_Of_Application") +
+                                "\nDue Date: N/A"; // You may update this if due date exists.
+                        JOptionPane.showMessageDialog(panel, info, "Job Details", JOptionPane.INFORMATION_MESSAGE);
+                    } else {
+                        JOptionPane.showMessageDialog(panel, "No details found.", "Info",
+                                JOptionPane.INFORMATION_MESSAGE);
+                    }
+                }
+            }
+        }, 4);
+
+        // Install ButtonColumn for WITHDRAW (column index 5)
+        new ButtonColumn(appTable, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int selectedRow = appTable.getSelectedRow();
+                if (selectedRow >= 0) {
+                    if ("Withdrawn".equals(appTable.getValueAt(selectedRow, 5).toString())) {
+                        // Already withdrawn; do nothing.
+                        return;
+                    }
                     int appId = Integer.parseInt(appTable.getValueAt(selectedRow, 0).toString());
                     int option = JOptionPane.showConfirmDialog(panel,
                             "Do you want to withdraw application ID: " + appId + "?",
@@ -568,46 +711,120 @@ public class UserProfileScreen extends BaseScreen {
                     if (option == JOptionPane.YES_OPTION) {
                         boolean withdrawn = userDAO.withdrawApplication(appId, loggedInEmail);
                         if (withdrawn) {
-                            JOptionPane.showMessageDialog(panel, "Application withdrawn successfully.", "Success",
+                            JOptionPane.showMessageDialog(panel, "Application status updated to Withdrawn.", "Success",
                                     JOptionPane.INFORMATION_MESSAGE);
-                            // Refresh the table data
-                            Object[][] updatedData = userDAO.getUserApplications(loggedInEmail);
-                            Object[][] newFinalData = new Object[updatedData.length][5];
-                            for (int i = 0; i < updatedData.length; i++) {
-                                newFinalData[i][0] = updatedData[i][0];
-                                newFinalData[i][1] = updatedData[i][1];
-                                newFinalData[i][2] = updatedData[i][2];
-                                newFinalData[i][3] = updatedData[i][3];
-                                newFinalData[i][4] = "View";
-                            }
-                            appTable.setModel(new DefaultTableModel(newFinalData, columnNames) {
-                                @Override
-                                public boolean isCellEditable(int row, int col) {
-                                    return col == 4;
-                                }
-                            });
+                            // Refresh the application table.
+                            refreshApplicationTable();
                         } else {
-                            JOptionPane.showMessageDialog(panel, "Failed to withdraw the application.", "Error",
+                            JOptionPane.showMessageDialog(panel, "Failed to update application status.", "Error",
                                     JOptionPane.ERROR_MESSAGE);
                         }
                     }
                 }
             }
-        }, 4); // Column index 4 for the "VIEW" column
+        }, 5);
 
-        // Optionally, add pagination or additional UI elements at the bottom.
-        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        // Install ButtonColumn for RESUME (column index 6)
+        new ButtonColumn(appTable, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int selectedRow = appTable.getSelectedRow();
+                if (selectedRow >= 0) {
+                    int option = JOptionPane.showOptionDialog(panel,
+                            "Choose an option:", "Resume Options",
+                            JOptionPane.YES_NO_CANCEL_OPTION,
+                            JOptionPane.QUESTION_MESSAGE,
+                            null,
+                            new Object[] { "View Resume", "Update Resume" },
+                            "View Resume");
+                    if (option == 0) { // View Resume
+                        byte[] resumeBytes = userDAO.getUserResume(loggedInEmail);
+                        if (resumeBytes != null && resumeBytes.length > 0) {
+                            try {
+                                File tempFile = File.createTempFile("resume_", ".pdf");
+                                tempFile.deleteOnExit();
+                                try (FileOutputStream fos = new FileOutputStream(tempFile)) {
+                                    fos.write(resumeBytes);
+                                }
+                                Desktop.getDesktop().open(tempFile);
+                            } catch (IOException ioEx) {
+                                ioEx.printStackTrace();
+                                JOptionPane.showMessageDialog(panel, "Error opening resume.", "Error",
+                                        JOptionPane.ERROR_MESSAGE);
+                            }
+                        } else {
+                            JOptionPane.showMessageDialog(panel, "No resume attached.", "Resume",
+                                    JOptionPane.INFORMATION_MESSAGE);
+                        }
+                    } else if (option == 1) { // Update Resume
+                        JFileChooser fileChooser = new JFileChooser();
+                        fileChooser.setFileFilter(new FileNameExtensionFilter("PDF Files", "pdf"));
+                        int retVal = fileChooser.showOpenDialog(panel);
+                        if (retVal == JFileChooser.APPROVE_OPTION) {
+                            File file = fileChooser.getSelectedFile();
+                            try (FileInputStream fis = new FileInputStream(file)) {
+                                byte[] fileBytes = new byte[(int) file.length()];
+                                fis.read(fileBytes);
+                                boolean updated = userDAO.updateUserResume(loggedInEmail, fileBytes);
+                                if (updated) {
+                                    JOptionPane.showMessageDialog(panel, "Resume updated successfully.", "Success",
+                                            JOptionPane.INFORMATION_MESSAGE);
+                                } else {
+                                    JOptionPane.showMessageDialog(panel, "Failed to update resume.", "Error",
+                                            JOptionPane.ERROR_MESSAGE);
+                                }
+                            } catch (IOException ioEx) {
+                                ioEx.printStackTrace();
+                            }
+                        }
+                    }
+                }
+            }
+        }, 6);
+
+        // Pagination controls for the Applications panel.
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         bottomPanel.setBackground(Color.WHITE);
-        JLabel pageLabel = new JLabel("Page 1"); // Example pagination label
+        JButton prevButton = new JButton("Prev");
+        JButton nextButton = new JButton("Next");
+        final JLabel pageLabel = new JLabel("Page " + currentAppPage);
+        prevButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (currentAppPage > 1) {
+                    currentAppPage--;
+                    refreshApplicationTable();
+                    pageLabel.setText("Page " + currentAppPage);
+                }
+            }
+        });
+        nextButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Object[][] nextData = userDAO.getUserApplications(loggedInEmail, currentAppPage + 1, appPageSize);
+                if (nextData.length > 0) {
+                    currentAppPage++;
+                    refreshApplicationTable();
+                    pageLabel.setText("Page " + currentAppPage);
+                }
+            }
+        });
+        bottomPanel.add(prevButton);
         bottomPanel.add(pageLabel);
+        bottomPanel.add(nextButton);
         panel.add(bottomPanel, BorderLayout.SOUTH);
+
+        // Refresh the table when the panel is shown
+        panel.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentShown(ComponentEvent e) {
+                refreshApplicationTable();
+            }
+        });
 
         return panel;
     }
 
-    /**
-     * Creates the Profile Picture section.
-     */
     private JPanel createProfilePicPanel() {
         JPanel containerPanel = new JPanel();
         containerPanel.setLayout(new BoxLayout(containerPanel, BoxLayout.Y_AXIS));
@@ -641,149 +858,168 @@ public class UserProfileScreen extends BaseScreen {
         return containerPanel;
     }
 
-    /**
-     * Creates the Profile Form panel for user details.
-     */
     private JPanel createProfileFormPanel() {
+        // Create a new panel with a GridBagLayout.
         JPanel formPanel = new JPanel(new GridBagLayout());
         formPanel.setOpaque(false);
+
+        // Create and configure the grid bag constraints.
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 10, 10, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Row 0: First Name and Last Name
+        // --- Row 0: First Name and Last Name ---
         gbc.gridx = 0;
         gbc.gridy = 0;
-        formPanel.add(new JLabel("<html>First Name <font color='red'>*</font>:</html>"), gbc);
+        JLabel lblFirstName = new JLabel("<html>First Name <font color='red'>*</font>:</html>");
+        formPanel.add(lblFirstName, gbc);
+
         gbc.gridx = 1;
+        // (Make sure txtFirstName has been initialized in the constructor.)
         formPanel.add(txtFirstName, gbc);
+
         gbc.gridx = 2;
-        formPanel.add(new JLabel("<html>Last Name <font color='red'>*</font>:</html>"), gbc);
+        JLabel lblLastName = new JLabel("<html>Last Name <font color='red'>*</font>:</html>");
+        formPanel.add(lblLastName, gbc);
+
         gbc.gridx = 3;
+        // (Make sure txtLastName is not null.)
         formPanel.add(txtLastName, gbc);
 
-        // Row 1: Email and Phone
+        // --- Row 1: Email and Phone ---
         gbc.gridx = 0;
         gbc.gridy = 1;
-        formPanel.add(new JLabel("<html>Email <font color='red'>*</font>:</html>"), gbc);
+        JLabel lblEmail = new JLabel("<html>Email <font color='red'>*</font>:</html>");
+        formPanel.add(lblEmail, gbc);
+
         gbc.gridx = 1;
         formPanel.add(txtEmail, gbc);
+
         gbc.gridx = 2;
-        formPanel.add(new JLabel("<html>Phone <font color='red'>*</font>:</html>"), gbc);
+        JLabel lblPhone = new JLabel("<html>Phone <font color='red'>*</font>:</html>");
+        formPanel.add(lblPhone, gbc);
+
         gbc.gridx = 3;
         formPanel.add(txtPhone, gbc);
 
-        // Row 2: Current Company and Job Role
+        // --- Row 2: Current Company and Job Role ---
         gbc.gridx = 0;
         gbc.gridy = 2;
-        formPanel.add(new JLabel("<html>Current Company <font color='red'>*</font>:</html>"), gbc);
+        JLabel lblCompany = new JLabel("<html>Current Company <font color='red'>*</font>:</html>");
+        formPanel.add(lblCompany, gbc);
+
         gbc.gridx = 1;
         formPanel.add(txtCompany, gbc);
+
         gbc.gridx = 2;
-        formPanel.add(new JLabel("<html>Job Role <font color='red'>*</font>:</html>"), gbc);
+        JLabel lblJobRole = new JLabel("<html>Job Role <font color='red'>*</font>:</html>");
+        formPanel.add(lblJobRole, gbc);
+
         gbc.gridx = 3;
         formPanel.add(txtJobRole, gbc);
 
-        // Row 3: Preferences / Skills (single column)
+        // --- Row 3: Preferences / Skills ---
         gbc.gridx = 0;
         gbc.gridy = 3;
-        formPanel.add(new JLabel("Preferences / Skills:"), gbc);
+        JLabel lblPreferences = new JLabel("Preferences / Skills:");
+        formPanel.add(lblPreferences, gbc);
+
         gbc.gridx = 1;
         formPanel.add(txtPreferences, gbc);
 
-        // Row 4: LinkedIn URL
+        // --- Row 4: LinkedIn URL ---
         gbc.gridx = 0;
         gbc.gridy = 4;
-        formPanel.add(new JLabel("LinkedIn URL:"), gbc);
+        JLabel lblLinkedIn = new JLabel("LinkedIn URL:");
+        formPanel.add(lblLinkedIn, gbc);
+
         gbc.gridx = 1;
         formPanel.add(txtLinkedIn, gbc);
 
-        // Row 5: Availability
+        // --- Row 5: Availability ---
         gbc.gridx = 0;
         gbc.gridy = 5;
-        formPanel.add(new JLabel("Availability:"), gbc);
+        JLabel lblAvailability = new JLabel("Availability:");
+        formPanel.add(lblAvailability, gbc);
+
         gbc.gridx = 1;
         formPanel.add(txtAvailability, gbc);
 
-        // Add the resume field.
+        // --- Row 6: Resume Field ---
+        // Call a helper function to add the resume-related components.
         addResumeField(formPanel, gbc);
 
         return formPanel;
     }
 
     private void addResumeField(JPanel formPanel, GridBagConstraints gbc) {
-        // Label: "Resume (Optional):"
+        // Row for the "Resume (Optional):" label.
         gbc.gridx = 0;
         gbc.gridy++;
-        formPanel.add(new JLabel("Resume (Optional):"), gbc);
+        JLabel lblResumeOptional = new JLabel("Resume (Optional):");
+        formPanel.add(lblResumeOptional, gbc);
 
-        // Panel to hold Upload and Delete buttons for resume.
+        // Row for the resume button panel (upload and delete buttons).
+        gbc.gridx = 1;
         JPanel resumeButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
         resumeButtonPanel.setOpaque(false);
         JButton uploadResumeButton = new JButton("Upload");
-        resumeButtonPanel.add(uploadResumeButton);
         JButton deleteResumeButton = new JButton("Delete");
-        deleteResumeButton.setVisible(false);
+        deleteResumeButton.setVisible(false); // Initially hidden.
+        resumeButtonPanel.add(uploadResumeButton);
         resumeButtonPanel.add(deleteResumeButton);
-
-        gbc.gridx = 1;
         formPanel.add(resumeButtonPanel, gbc);
 
-        // Next row: Instead of adding a download button, add a clickable label for the
-        // file name.
+        // Row for the label that displays the resume file name.
         gbc.gridx = 0;
         gbc.gridy++;
-        formPanel.add(new JLabel("Resume:"), gbc);
+        JLabel lblResume = new JLabel("Resume:");
+        formPanel.add(lblResume, gbc);
 
-        // Create the clickable label.
+        gbc.gridx = 1;
+        // Create the resume file name label.
         resumeFileNameLabel = new JLabel();
-        resumeFileNameLabel.setForeground(Color.BLUE); // typical hyperlink color
+        resumeFileNameLabel.setForeground(Color.BLUE); // Typical hyperlink color.
         resumeFileNameLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         resumeFileNameLabel.setText("<html><u>No file selected</u></html>");
-
-        // Add a mouse listener to trigger download when the label is clicked.
+        // Add a mouse listener to allow viewing the resume.
         resumeFileNameLabel.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 downloadResume();
             }
         });
-
-        gbc.gridx = 1;
         formPanel.add(resumeFileNameLabel, gbc);
 
-        // Action for the Upload button.
+        // Action for the upload button.
         uploadResumeButton.addActionListener(e -> {
             JFileChooser fileChooser = new JFileChooser();
-            fileChooser.setFileFilter(new FileNameExtensionFilter("PDF Files", "pdf"));
+            fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("PDF Files", "pdf"));
             int returnValue = fileChooser.showOpenDialog(this);
             if (returnValue == JFileChooser.APPROVE_OPTION) {
                 File resumeFile = fileChooser.getSelectedFile();
                 if (resumeFile != null) {
                     byte[] resumeBytes = fileToByteArray(resumeFile);
                     if (resumeBytes != null) {
-                        UserDAO userDAO = new UserDAO();
-                        boolean updated = userDAO.updateUserResume(loggedInEmail, resumeBytes);
+                        boolean updated = new UserDAO().updateUserResume(loggedInEmail, resumeBytes);
                         if (updated) {
-                            // Instead of showing a button, update the clickable label with the file name.
                             String fileName = resumeFile.getName();
                             resumeFileNameLabel.setText("<html><u>" + fileName + "</u></html>");
                         } else {
-                            JOptionPane.showMessageDialog(this, "Failed to update resume in database.",
-                                    "Error", JOptionPane.ERROR_MESSAGE);
+                            JOptionPane.showMessageDialog(this, "Failed to update resume in database.", "Error",
+                                    JOptionPane.ERROR_MESSAGE);
                         }
                     }
                 }
             }
         });
 
-        // Action for the Delete button (optional).
+        // (Optional) Action for the delete button can be added here.
         deleteResumeButton.addActionListener(e -> {
-            // Optionally, call a method to delete resume from DB and then update the UI.
+            // For example, you might update the database to delete the resume.
             resumeFileNameLabel.setText("<html><u>No file selected</u></html>");
         });
     }
-
     // Download the resume from DB and open it.
     private void downloadResume() {
         UserDAO userDAO = new UserDAO();
@@ -928,7 +1164,6 @@ public class UserProfileScreen extends BaseScreen {
     private void loadUserData() {
         UserDAO userDAO = new UserDAO();
         User user = userDAO.getUserProfile(loggedInEmail);
-
         if (user != null) {
             txtFirstName.setText(user.getFirstName());
             txtLastName.setText(user.getLastName());
@@ -944,34 +1179,25 @@ public class UserProfileScreen extends BaseScreen {
             byte[] picBytes = userDAO.getUserProfilePicture(loggedInEmail);
             if (picBytes != null) {
                 ImageIcon icon = new ImageIcon(picBytes);
-                int labelWidth = profilePicLabel.getWidth();
-                int labelHeight = profilePicLabel.getHeight();
-                if (labelWidth == 0 || labelHeight == 0) {
-                    Dimension pref = profilePicLabel.getPreferredSize();
-                    labelWidth = (pref.width > 0) ? pref.width : 120;
-                    labelHeight = (pref.height > 0) ? pref.height : 120;
+                Dimension size = profilePicLabel.getSize();
+                if (size.width == 0 || size.height == 0) {
+                    size = new Dimension(120, 120);
                 }
-                Image image = icon.getImage().getScaledInstance(labelWidth, labelHeight, Image.SCALE_SMOOTH);
+                Image image = icon.getImage().getScaledInstance(size.width, size.height, Image.SCALE_SMOOTH);
                 profilePicLabel.setIcon(new ImageIcon(image));
                 profilePicLabel.setText("");
                 removeButton.setVisible(true);
             }
 
             // Load resume.
-            // Load resume.
             byte[] resumeBytes = userDAO.getUserResume(loggedInEmail);
             if (resumeBytes != null && resumeBytes.length > 0) {
-                System.out.println("Resume is available, size: " + resumeBytes.length);
-                // Update the clickable label. You can choose to display "View Resume" or a file
-                // name if you stored it.
-                resumeFileNameLabel.setText("<html><u>View by default Resume</u></html>");
+                resumeFileNameLabel.setText("<html><u>View Resume</u></html>");
             } else {
-                System.out.println("No resume found for this user.");
                 resumeFileNameLabel.setText("<html><u>No file selected</u></html>");
             }
         } else {
             JOptionPane.showMessageDialog(this, "User data not found.", "Error", JOptionPane.ERROR_MESSAGE);
         }
-        System.out.println("DEBUG: loggedInEmail = " + loggedInEmail);
     }
 }
