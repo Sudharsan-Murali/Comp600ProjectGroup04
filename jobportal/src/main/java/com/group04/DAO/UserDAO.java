@@ -798,10 +798,10 @@ public class UserDAO {
             return false;
         }
     }
-    
-    //For adding admin dashboard
-    // All users (for Admin dashboard table)
 
+
+    // For adding admin dashboard
+    // All users (for Admin dashboard table)
     public static List<Map<String, String>> getAllUsers() {
         List<Map<String, String>> userList = new ArrayList<>();
         String query = "SELECT User_ID, CONCAT(First_name, ' ', Last_name) AS Name, Email FROM Users WHERE Role_ID = 1";
@@ -819,9 +819,7 @@ public class UserDAO {
             e.printStackTrace();
         }
         return userList;
-
     }
-
     // Delete user by ID
     public static boolean deleteUserById(String userId) {
         String query = "DELETE FROM Users WHERE User_ID = ?";
@@ -834,7 +832,6 @@ public class UserDAO {
             return false;
         }
     }
-
     // Update user email by ID
     public static boolean updateUserEmail(String userId, String newEmail) {
         String query = "UPDATE Users SET Email = ? WHERE User_ID = ?";
@@ -848,7 +845,6 @@ public class UserDAO {
             return false;
         }
     }
-
     // Get all recruiters (Role_ID = 2)
     public static List<Map<String, String>> getAllRecruiters() {
         List<Map<String, String>> recruiterList = new ArrayList<>();
@@ -873,7 +869,6 @@ public class UserDAO {
         }
         return recruiterList;
     }
-
     // Update recruiter email
     public static boolean updateRecruiterEmail(String recruiterId, String newEmail) {
         String query = "UPDATE Users SET Email = ? WHERE User_ID = ? AND Role_ID = 2";
@@ -887,7 +882,6 @@ public class UserDAO {
             return false;
         }
     }
-
     // Delete recruiter by ID
     public static boolean deleteRecruiterById(String recruiterId) {
         String query = "DELETE FROM Users WHERE User_ID = ? AND Role_ID = 2";
@@ -899,5 +893,41 @@ public class UserDAO {
             e.printStackTrace();
             return false;
         }
+    }
+    // for the stats tab
+    public static Map<String, Integer> getPlatformStats() {
+        Map<String, Integer> stats = new HashMap<>();
+
+        String userCountQuery = "SELECT COUNT(*) FROM Users WHERE Role_ID = 1";
+        String recruiterCountQuery = "SELECT COUNT(*) FROM Users WHERE Role_ID = 2";
+        String jobsAppliedQuery = "SELECT COUNT(*) FROM Applications_User";
+        String jobsPostedQuery = "SELECT COUNT(*) FROM recruiters_applications";
+        String rejectedQuery = "SELECT COUNT(*) FROM Applications_User WHERE Status_ID = 3";
+        String acceptedQuery = "SELECT COUNT(*) FROM Applications_User WHERE Status_ID = 2";
+
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD)) {
+            stats.put("users", getCount(conn, userCountQuery));
+            stats.put("recruiters", getCount(conn, recruiterCountQuery));
+            stats.put("jobs_applied", getCount(conn, jobsAppliedQuery));
+            stats.put("jobs_posted", getCount(conn, jobsPostedQuery));
+            stats.put("rejected", getCount(conn, rejectedQuery));
+            stats.put("accepted", getCount(conn, acceptedQuery));
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return stats;
+    }
+    // Helper method for reuse
+    private static int getCount(Connection conn, String query) {
+        try (PreparedStatement stmt = conn.prepareStatement(query);
+                ResultSet rs = stmt.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
     }
 }

@@ -103,7 +103,7 @@ VALUES
 ('Anthony', 'Martinez', 'anthony.martinez@example.ca', '306-555-0019', '1987-09-09', 'ITconsult99', 1, 'Rocky', 1, 1019, 'IT Consultant', 'Sys Analysis', 'IT Strategy', 'Cloud', 'Security', 'Info Tech', '4 years', 'Full Time', '6 years', 'https://www.linkedin.com/in/anthony-martinez', NULL, NULL, 'Yes'),
 ('Susan', 'Robinson', 'susan.robinson@example.ca', '306-555-0020', '1990-02-14', 'EnvSci2021', 1, 'Luna', 2, 1020, 'Env Scientist', 'Data Analysis', 'Field Res', 'Reports', 'Sustainability', 'Env Sci', '4 years', 'Full Time', '4 years', 'https://www.linkedin.com/in/susan-robinson', NULL, NULL, 'Yes'),
 ('Mark', 'Clark', 'mark.clark@example.ca', '306-555-0021', '1982-08-08', 'SocialWork!21', 1, 'Max', 1, 1011, 'Social Worker', 'Empathy', 'Crisis Mgmt', 'Counseling', 'Comms', 'Social Work', '4 years', 'Full Time', '5 years', 'https://www.linkedin.com/in/mark-clark', NULL, NULL, 'Yes'),
-('Nancy', 'Rodriguez', 'nancy.rodriguez@example.ca', '306-555-0022', '1985-05-05', 'LawyerSafe5', 1, 'Buddy', 2, 1012, 'Lawyer', 'Legal Research', 'Negotiation', 'Comms', 'Writing', 'Law', '5 years', 'Full Time', '7 years', 'https://www.linkedin.com/in/nancy-rodriguez', NULL, NULL, 'Yes'),
+('Nancy', 'Rodriguez', 'nancy.rodriguez@example.ca', '306-555-0022', '1985-05-05', 'LawyerSafe5', 1, 'Buddy', 2, 1012, 'Lawyer', 'Legal Research', 'Negotiation', 'Comms', 'Writing', 'Law', '5 years', 'Full Time', '7 years', 'https://www.linkedin.com/in/nancy-rodriguez', NULL, NULL, 'Yes');
 
 
 

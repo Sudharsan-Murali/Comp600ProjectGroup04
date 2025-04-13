@@ -34,7 +34,7 @@ public class AdminDashboard {
         logoutButton.setPreferredSize(new Dimension(100, 30));
         logoutButton.addActionListener(e -> {
             frame.dispose();
-            SwingUtilities.invokeLater(() -> new JobPortalApplication());
+            // SwingUtilities.invokeLater(() -> new JobPortalApplication());
         });
         headerPanel.add(logoutButton, BorderLayout.EAST);
 
@@ -45,6 +45,7 @@ public class AdminDashboard {
         tabs.addTab("User Management", createUserManagementPanel());
         tabs.addTab("Recruiter Management", createRecruiterManagementPanel());
         tabs.addTab("System Logs", createLogsPanel());
+        tabs.addTab("Stats", createStatsPanel());
 
         mainPanel.add(tabs, BorderLayout.CENTER);
         frame.add(mainPanel);
@@ -250,4 +251,74 @@ public class AdminDashboard {
     interface RowAction {
         void execute(int row);
     }
+
+    private JPanel createStatsPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+    
+        // Header label
+        JLabel label = new JLabel("Live Platform Statistics", JLabel.CENTER);
+        label.setFont(new Font("Arial", Font.BOLD, 18));
+        label.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+    
+        // Refresh button
+        JButton refreshButton = new JButton("Refresh Now");
+        refreshButton.setFont(new Font("Arial", Font.PLAIN, 14));
+        refreshButton.setFocusable(false);
+    
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.add(label, BorderLayout.CENTER);
+        topPanel.add(refreshButton, BorderLayout.EAST);
+    
+        panel.add(topPanel, BorderLayout.NORTH);
+    
+    
+        String[] headers = {
+            "Users", "Recruiters", "Jobs Applied", "Jobs Posted", "Rejected Applications", "Accepted Applicatons"
+        };
+        Object[][] data = new Object[1][headers.length];
+
+    
+        DefaultTableModel model = new DefaultTableModel(data, headers) {
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+    
+        JTable table = new JTable(model);
+        table.setRowHeight(30);
+        table.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        table.setGridColor(new Color(189, 195, 199));
+        table.setShowGrid(true);
+        table.setIntercellSpacing(new Dimension(5, 5));
+        table.setBackground(Color.WHITE);
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+        
+        JTableHeader tableHeader = table.getTableHeader();
+        tableHeader.setPreferredSize(new Dimension(tableHeader.getPreferredSize().width, 35));
+        tableHeader.setFont(new Font("SansSerif", Font.BOLD, 16));
+        tableHeader.setBackground(new Color(52, 73, 94));
+        tableHeader.setForeground(Color.WHITE);
+        
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.getViewport().setBackground(Color.WHITE);
+        panel.add(scrollPane, BorderLayout.CENTER);
+        
+    
+        // Auto-refresh stats every 10 seconds
+        Timer timer = new Timer(10000, e -> {
+            Map<String, Integer> stats = UserDAO.getPlatformStats();
+            data[1][0] = stats.getOrDefault("users", 0);
+            data[1][1] = stats.getOrDefault("recruiters", 0);
+            data[1][2] = stats.getOrDefault("jobs_applied", 0);
+            data[1][3] = stats.getOrDefault("jobs_posted", 0);
+            data[1][4] = stats.getOrDefault("rejected", 0);
+            data[1][5] = stats.getOrDefault("accepted", 0);
+            model.fireTableDataChanged();
+        });
+        timer.setRepeats(true);
+        timer.start();
+    
+        return panel;
+    }
+    
 }
