@@ -606,9 +606,9 @@ public class UserDAO {
         List<Map<String, Object>> jobPosts = new ArrayList<>();
         int offset = (page - 1) * pageSize;
         String sql = "SELECT Job_ID, Job_Title, Date_Of_Application, Job_Type, Job_location " +
-                     "FROM recruiters_applications WHERE user_ID = ? " +
-                     "ORDER BY Date_Of_Application DESC " +
-                     "LIMIT ? OFFSET ?";
+                "FROM recruiters_applications WHERE user_ID = ? " +
+                "ORDER BY Date_Of_Application DESC " +
+                "LIMIT ? OFFSET ?";
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, userId);
             stmt.setInt(2, pageSize);
@@ -628,7 +628,7 @@ public class UserDAO {
         }
         return jobPosts;
     }
-    
+
     public int countJobPostsByUserId(int userId) {
         String sql = "SELECT COUNT(*) AS total FROM recruiters_applications WHERE user_ID = ?";
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -817,7 +817,6 @@ public class UserDAO {
         }
     }
 
-
     // For adding admin dashboard
     // All users (for Admin dashboard table)
     public static List<Map<String, String>> getAllUsers() {
@@ -838,6 +837,7 @@ public class UserDAO {
         }
         return userList;
     }
+
     // Delete user by ID
     public static boolean deleteUserById(String userId) {
         String query = "DELETE FROM Users WHERE User_ID = ?";
@@ -850,6 +850,7 @@ public class UserDAO {
             return false;
         }
     }
+
     // Update user email by ID
     public static boolean updateUserEmail(String userId, String newEmail) {
         String query = "UPDATE Users SET Email = ? WHERE User_ID = ?";
@@ -863,6 +864,7 @@ public class UserDAO {
             return false;
         }
     }
+
     // Get all recruiters (Role_ID = 2)
     public static List<Map<String, String>> getAllRecruiters() {
         List<Map<String, String>> recruiterList = new ArrayList<>();
@@ -887,6 +889,7 @@ public class UserDAO {
         }
         return recruiterList;
     }
+
     // Update recruiter email
     public static boolean updateRecruiterEmail(String recruiterId, String newEmail) {
         String query = "UPDATE Users SET Email = ? WHERE User_ID = ? AND Role_ID = 2";
@@ -900,6 +903,7 @@ public class UserDAO {
             return false;
         }
     }
+
     // Delete recruiter by ID
     public static boolean deleteRecruiterById(String recruiterId) {
         String query = "DELETE FROM Users WHERE User_ID = ? AND Role_ID = 2";
@@ -912,6 +916,7 @@ public class UserDAO {
             return false;
         }
     }
+
     // for the stats tab
     public static Map<String, Integer> getPlatformStats() {
         Map<String, Integer> stats = new HashMap<>();
@@ -934,8 +939,12 @@ public class UserDAO {
             e.printStackTrace();
         }
 
+        System.out.println("Stats Retrieved from DB:");
+        stats.forEach((key, value) -> System.out.println(key + ": " + value));
+
         return stats;
     }
+
     // Helper method for reuse
     private static int getCount(Connection conn, String query) {
         try (PreparedStatement stmt = conn.prepareStatement(query);
