@@ -6,7 +6,9 @@ import com.group04.DAO.User;
 import com.group04.GUI.Admin.AdminDashboard;
 import com.group04.GUI.Recruiter.RecruiterProfileScreen;
 import com.group04.GUI.User.UserProfileScreen;
-
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
 import java.awt.*;
 
 public class JobPortalApplication {
@@ -120,7 +122,6 @@ public class JobPortalApplication {
         loginButton.addActionListener(e -> {
             String inputEmail = email.getText();
             String inputPassword = new String(password.getPassword());
-            
 
             UserDAO userDAO = new UserDAO();
             boolean loginSuccess = userDAO.loginUser(inputEmail, inputPassword); // Check login credentials
@@ -337,36 +338,36 @@ public class JobPortalApplication {
         changePwdFrame.setLocationRelativeTo(null);
         changePwdFrame.setLayout(new GridBagLayout());
         changePwdFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-    
+
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 10, 10, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
-    
+
         int row = 0;
         gbc.gridx = 0;
         gbc.gridy = row;
         changePwdFrame.add(new JLabel("New Password:"), gbc);
-    
+
         gbc.gridx = 1;
         JPasswordField newPasswordField = new JPasswordField(20);
         changePwdFrame.add(newPasswordField, gbc);
-    
+
         row++;
         gbc.gridx = 0;
         gbc.gridy = row;
         changePwdFrame.add(new JLabel("Confirm Password:"), gbc);
-    
+
         gbc.gridx = 1;
         JPasswordField confirmPasswordField = new JPasswordField(20);
         changePwdFrame.add(confirmPasswordField, gbc);
-    
+
         row++;
         gbc.gridx = 0;
         gbc.gridy = row;
         gbc.gridwidth = 2;
         JButton updatePwdButton = new JButton("Update Password");
         changePwdFrame.add(updatePwdButton, gbc);
-    
+
         updatePwdButton.addActionListener(e -> {
             String newPwd = new String(newPasswordField.getPassword());
             String confirmPwd = new String(confirmPasswordField.getPassword());
@@ -389,10 +390,10 @@ public class JobPortalApplication {
                         "Error", JOptionPane.ERROR_MESSAGE);
             }
         });
-    
+
         changePwdFrame.setVisible(true);
     }
-    
+
     private void showRegistration(String role) {
         JFrame regFrame = new JFrame(role + " Registration");
         regFrame.setSize(500, 500);
@@ -440,30 +441,93 @@ public class JobPortalApplication {
         txtDob = new JTextField(20);
         regFrame.add(txtDob, gbc);
 
+        UserDAO dao = new UserDAO();
+        Map<Integer, String> companyMap = dao.getAllCompanyNames(); // You’ll need to add this method
+
+        List<Integer> companyIds = new ArrayList<>();
+        JComboBox<String> companyDropdown = new JComboBox<>();
+
+        for (Map.Entry<Integer, String> entry : companyMap.entrySet()) {
+            companyIds.add(entry.getKey());
+            companyDropdown.addItem(entry.getValue());
+        }
+
+        if (role.equalsIgnoreCase("Recruiter")) {
+            gbc.gridx = 0;
+            gbc.gridy = ++row;
+            regFrame.add(new JLabel("Company:"), gbc);
+            gbc.gridx = 1;
+            regFrame.add(companyDropdown, gbc);
+        }
+
         gbc.gridx = 0;
         gbc.gridy = ++row;
         regFrame.add(new JLabel("Password:"), gbc);
         gbc.gridx = 1;
         JPasswordField txtPassword = new JPasswordField(20);
         regFrame.add(txtPassword, gbc);
+
+        // Fetch questions from the database
+        UserDAO userDAO = new UserDAO();
+        Map<Integer, String> questionsMap = userDAO.getAllSecurityQuestions();
+        DefaultComboBoxModel<String> comboModel = new DefaultComboBoxModel<>();
+        List<Integer> questionIds = new ArrayList<>();
+
+        for (Map.Entry<Integer, String> entry : questionsMap.entrySet()) {
+            questionIds.add(entry.getKey());
+            comboModel.addElement(entry.getValue());
+        }
+        // Get company names from db
+
+        JComboBox<String> securityQCombo = new JComboBox<>(comboModel);
+
+        gbc.gridx = 0;
+        gbc.gridy = ++row;
+        regFrame.add(new JLabel("Security Question:"), gbc);
+        gbc.gridx = 1;
+        regFrame.add(securityQCombo, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = ++row;
+        regFrame.add(new JLabel("Answer:"), gbc);
+        gbc.gridx = 1;
+        JTextField securityAnswerField = new JTextField(20);
+        regFrame.add(securityAnswerField, gbc);
+
         JButton regButton = new JButton("Register");
         regButton.addActionListener(e -> {
-            // Get the plain text password directly.
-            String password = new String(txtPassword.getPassword());
-            
-            // Create the user object using the plain text password.
-            User user = new User(txtFirstName.getText(), txtLastName.getText(), txtEmail.getText(),
-                    txtMobile.getText(), txtDob.getText(), password);
-            
-            UserDAO userDAO = new UserDAO();
+            int roleId = role.equalsIgnoreCase("User") ? 1 : (role.equalsIgnoreCase("Recruiter") ? 2 : 3);
+            int selectedIndex = securityQCombo.getSelectedIndex();
+            int questionId = questionIds.get(selectedIndex); // security question ID
+        
+            int companyId = companyIds.get(companyDropdown.getSelectedIndex());
+            // System.out.println("Selected company id: " + companyId);
+
+            if (role.equalsIgnoreCase("Recruiter")) {
+                companyId = companyIds.get(companyDropdown.getSelectedIndex()); // 💥 FIX: Get ID dynamically
+            }
+        
+            User user = new User(
+                txtFirstName.getText(),
+                txtLastName.getText(),
+                txtEmail.getText(),
+                txtMobile.getText(),
+                txtDob.getText(),
+                new String(txtPassword.getPassword()),
+                roleId,
+                String.valueOf(questionId),
+                securityAnswerField.getText(),
+                companyId
+            );
+        
             if (userDAO.registerUser(user)) {
                 JOptionPane.showMessageDialog(null, "Registration Successful!");
-                // Optionally dispose the registration form, if applicable.
+                regFrame.dispose();
             } else {
                 JOptionPane.showMessageDialog(null, "Registration Failed. Try again later.");
             }
         });
-
+        
         gbc.gridx = 1;
         gbc.gridy = ++row;
         regFrame.add(regButton, gbc);

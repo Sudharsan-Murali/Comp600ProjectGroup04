@@ -46,7 +46,7 @@ public class UserProfileScreen extends BaseScreen {
     private JTable appTable;
     private ActionListener viewAction, withdrawAction, resumeAction;
     private int currentAppPage = 1;
-    private final int appPageSize = 20;    
+    private final int appPageSize = 16;    
     private final String[] appColumnNames = { "APP NO", "JOB TITLE", "APPLICATION DATE", "STATUS", "VIEW", "WITHDRAW",
             "RESUME" };    
 

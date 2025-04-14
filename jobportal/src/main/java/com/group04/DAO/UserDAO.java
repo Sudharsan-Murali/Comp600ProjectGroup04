@@ -25,8 +25,16 @@ public class UserDAO {
 
     // Register a new user.
     public boolean registerUser(User user) {
-        String query = "INSERT INTO Users (First_name, Last_name, Email, Mobile, Dob, Password, Role_ID, Security_Que, Security_Ans) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String query;
+
+        // Use different SQL depending on the role
+        if (user.getRoleId() == 2) { // Recruiter
+            query = "INSERT INTO Users (First_name, Last_name, Email, Mobile, Dob, Password, Role_ID, Security_Que, Security_Ans, Company_ID) "
+                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        } else { // User or Admin
+            query = "INSERT INTO Users (First_name, Last_name, Email, Mobile, Dob, Password, Role_ID, Security_Que, Security_Ans) "
+                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        }
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setString(1, user.getFirstName());
             stmt.setString(2, user.getLastName());
@@ -37,6 +45,10 @@ public class UserDAO {
             stmt.setInt(7, user.getRoleId());
             stmt.setString(8, user.getSecurityQuestion());
             stmt.setString(9, user.getSecurityAnswer());
+            // Only set Company_ID for recruiters
+            if (user.getRoleId() == 2) {
+                stmt.setInt(10, user.getCompanyId());
+            }
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -676,6 +688,48 @@ public class UserDAO {
         return recruiterInfo;
     }
 
+    // New method: Get applications for a recruiter based on their company ID
+    public Object[][] getRecruiterApplications(int companyId, int page, int pageSize) {
+        List<Object[]> list = new ArrayList<>();
+        String query = "SELECT " +
+                "au.Application_ID as appNo, " +
+                "au.Job_Title, " +
+                "CONCAT(u.First_name, ' ', u.Last_name) as ApplicantName, " +
+                "u.Mobile as Contact, " +
+                "aps.Status_type, " +
+                "u.Resume_default as Resume " +
+                "FROM Applications_User au " +
+                "JOIN Application_Status aps ON au.Status_ID = aps.Status_ID " +
+                "JOIN Users u ON u.User_ID = au.User_ID " +
+                "WHERE au.Company_ID = ? " +
+                "ORDER BY au.Application_ID DESC " +
+                "LIMIT ? OFFSET ?";
+        try (Connection conn = getConnection();
+                PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setInt(1, companyId);
+            stmt.setInt(2, pageSize);
+            stmt.setInt(3, (page - 1) * pageSize);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                // Create a row with 8 columns
+                Object[] row = new Object[6];
+                row[0] = rs.getInt("appNo"); // APPLICATION NO
+                row[1] = rs.getString("Job_Title"); // JOB TITLE
+                row[2] = rs.getString("ApplicantName"); // APPLICANT NAME
+                row[3] = rs.getString("Contact"); // CONTACT
+                // row[4] = ""; // VIEW JOB placeholder
+                // row[5] = ""; // VIEW APPLICATION placeholder
+                row[4] = rs.getString("Status_type"); // STATUS
+                row[5] = rs.getBytes("Resume"); // RESUME bytes
+                list.add(row);
+            }
+            return list.toArray(new Object[list.size()][]);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return new Object[0][0];
+    }
+
     public boolean updateRecruiterProfile(String email, String companyName, String companyAddress,
             String companyPhone, String linkedinUrl, String website) {
 
@@ -723,6 +777,34 @@ public class UserDAO {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public boolean updateJobApplicationStatus(int applicationId, int newStatusId) {
+        String query = "UPDATE Applications_User SET Status_ID = ? WHERE Application_ID = ?";
+        try (Connection conn = getConnection();
+                PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setInt(1, newStatusId);
+            stmt.setInt(2, applicationId);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public List<String> getApplicationStatusList() {
+        List<String> statuses = new ArrayList<>();
+        String query = "SELECT Status_type FROM Application_Status";
+        try (Connection conn = getConnection();
+                PreparedStatement stmt = conn.prepareStatement(query);
+                ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                statuses.add(rs.getString("Status_type"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return statuses;
     }
 
     // Add Job Posts Screen
@@ -957,4 +1039,34 @@ public class UserDAO {
         }
         return 0;
     }
+    // REGISTRATION
+    public Map<Integer, String> getAllSecurityQuestions() {
+        Map<Integer, String> questions = new HashMap<>();
+        String sql = "SELECT Que_ID, Security_Question FROM security_ques";
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                questions.put(rs.getInt("Que_ID"), rs.getString("Security_Question"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return questions;
+    }
+    public Map<Integer, String> getAllCompanyNames() {
+        Map<Integer, String> companies = new HashMap<>();
+        String sql = "SELECT Company_ID, Company_name FROM company";
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                companies.put(rs.getInt("Company_ID"), rs.getString("Company_name"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return companies;
+    }
+
 }
