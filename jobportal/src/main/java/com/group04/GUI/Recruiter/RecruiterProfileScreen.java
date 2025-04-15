@@ -30,10 +30,10 @@ public class RecruiterProfileScreen {
     private JLabel pageLabel;
     private int currentPage = 1;
     private boolean isEditMode = false;
-    private int editingJobId = -1; // We'll use this to pass the actual DB Job_ID
+    private int editingJobId = -1;
     private final int pageSize = 20;
     private int totalPages = 1;
-
+    private boolean intentionalStatusChange = false;
     private String recruiterEmail;
     private Map<String, String> recruiterData;
 
@@ -47,8 +47,7 @@ public class RecruiterProfileScreen {
     // ADD JOB POST SCREEN
     private JTextField jobIdField;
     private JTextField jobTitleField;
-    private JTextField minSalaryField; // Inside RecruiterProfileScreen class
-
+    private JTextField minSalaryField;
     private Timer refreshTimer;
 
     public class ButtonEditor extends DefaultCellEditor {
@@ -189,7 +188,7 @@ public class RecruiterProfileScreen {
         showProfileScreen();
 
         // Initialize the auto-refresh timer to fire every 10 seconds
-        refreshTimer = new Timer(10000, new ActionListener() {
+        refreshTimer = new Timer(100000, new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // Optionally, check if the applications screen is visible before refreshing
@@ -407,9 +406,6 @@ public class RecruiterProfileScreen {
             JOptionPane.showMessageDialog(frame, "Failed to update profile.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
-
-    // ----------------------------
-
     // Helper method to add an individual form field (if needed elsewhere)
     private void addFormField(JPanel panel, String labelText, int row, int col, GridBagConstraints gbc) {
         // Label with colon in black and a required asterisk in red
@@ -899,7 +895,19 @@ public class RecruiterProfileScreen {
         List<String> statusList = new UserDAO().getApplicationStatusList();
         String[] statusArray = statusList.toArray(new String[0]);
 
+        // When setting up the cell editor for your STATUS column:
         JComboBox<String> statusCombo = new JComboBox<>(statusArray);
+
+        // Add an ItemListener so that we only set the flag when the user makes a
+        // selection.
+        statusCombo.addItemListener(e -> {
+            if (e.getStateChange() == ItemEvent.SELECTED) {
+                intentionalStatusChange = true;
+                System.out.println("[DEBUG] Item selected: " + e.getItem());
+            }
+        });
+
+        // Set up the custom DefaultCellEditor.
         applicationTable.getColumnModel().getColumn(4).setCellEditor(new DefaultCellEditor(statusCombo) {
             @Override
             public boolean stopCellEditing() {
@@ -907,10 +915,28 @@ public class RecruiterProfileScreen {
                 if (row < 0) {
                     return super.stopCellEditing();
                 }
+
+                // Retrieve the current status from the table model.
+                Object currentStatusObj = applicationTable.getValueAt(row, 4);
+                String currentStatus = currentStatusObj != null ? currentStatusObj.toString() : "";
+                String selectedStatus = (String) getCellEditorValue();
+
+                // Debug output to verify values.
+                System.out.println("[DEBUG] Current status: " + currentStatus);
+                System.out.println("[DEBUG] Selected status: " + selectedStatus);
+                System.out.println("[DEBUG] Intentional change flag: " + intentionalStatusChange);
+
+                // First, check if the user has truly chosen a new status.
+                if (!intentionalStatusChange || selectedStatus.equals(currentStatus)) {
+                    // Reset flag and cancel the refresh.
+                    intentionalStatusChange = false;
+                    return super.stopCellEditing();
+                }
+
+                // If we reached this point, the status has changed intentionally.
                 int appId = Integer.parseInt(applicationTable.getValueAt(row, 0).toString());
-                String newStatusText = (String) getCellEditorValue();
                 int newStatusId;
-                switch (newStatusText) {
+                switch (selectedStatus) {
                     case "Accepted":
                         newStatusId = 2;
                         break;
@@ -923,14 +949,20 @@ public class RecruiterProfileScreen {
                     default:
                         newStatusId = 1;
                 }
+
+                // Update the status in the database.
                 boolean updated = new UserDAO().updateJobApplicationStatus(appId, newStatusId);
                 if (updated) {
-                    JOptionPane.showMessageDialog(null, "Status updated to " + newStatusText);
+                    JOptionPane.showMessageDialog(null, "Status updated to " + selectedStatus);
+                    // Call refresh only if an intentional update happened.
                     showApplicationScreen();
                 } else {
                     JOptionPane.showMessageDialog(null, "Failed to update application status.", "Error",
                             JOptionPane.ERROR_MESSAGE);
                 }
+
+                // Reset the flag so that subsequent focus loss doesn't trigger a refresh.
+                intentionalStatusChange = false;
                 return super.stopCellEditing();
             }
         });

@@ -394,6 +394,20 @@ public class JobPortalApplication {
         changePwdFrame.setVisible(true);
     }
 
+
+
+    private boolean isValidName(String name) {
+        return name.matches("^[A-Za-z]+$");
+    }
+    
+    private boolean isValidDate(String date) {
+        return date.matches("^\\d{4}-\\d{2}-\\d{2}$");
+    }
+    
+    private boolean isValidEmail(String email) {
+        return email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
+    }
+
     private void showRegistration(String role) {
         JFrame regFrame = new JFrame(role + " Registration");
         regFrame.setSize(500, 500);
@@ -451,6 +465,7 @@ public class JobPortalApplication {
             companyIds.add(entry.getKey());
             companyDropdown.addItem(entry.getValue());
         }
+    
 
         if (role.equalsIgnoreCase("Recruiter")) {
             gbc.gridx = 0;
@@ -507,6 +522,37 @@ public class JobPortalApplication {
                 companyId = companyIds.get(companyDropdown.getSelectedIndex()); // 💥 FIX: Get ID dynamically
             }
         
+            String firstName = txtFirstName.getText().trim();
+            String lastName = txtLastName.getText().trim();
+            String email = txtEmail.getText().trim();
+            String dob = txtDob.getText().trim();
+            String secAnswer = securityAnswerField.getText().trim();
+                        
+            if (!isValidName(firstName)) {
+                JOptionPane.showMessageDialog(regFrame, "First Name must contain only alphabets.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
+            if (!isValidName(lastName)) {
+                JOptionPane.showMessageDialog(regFrame, "Last Name must contain only alphabets.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            
+           if (!isValidEmail(email)) {
+              JOptionPane.showMessageDialog(regFrame, "Invalid Email format.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
+                 }
+            
+            if (!isValidDate(dob)) {
+                JOptionPane.showMessageDialog(regFrame, "Date of Birth must be in yyyy-mm-dd format.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            if (secAnswer.isEmpty()) {
+                JOptionPane.showMessageDialog(regFrame, "Security Answer cannot be empty.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
             User user = new User(
                 txtFirstName.getText(),
                 txtLastName.getText(),
